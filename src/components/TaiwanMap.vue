@@ -5,6 +5,7 @@
 <script>
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
+import { watch } from 'vue';
 
 export default {
     name: 'TaiwanMap',
@@ -281,7 +282,9 @@ export default {
                         .attr('fill', 'black')
                         .attr('text-anchor', 'middle');
                 });
-        }
+        },
+
+        
     }
 };
 </script>
