@@ -83,7 +83,7 @@ export default {
             // Set up the projection and path generator
             const projection = d3.geoMercator()
                 .center([121, 23.5]) // Centered around Taiwan
-                .scale(width * 17.5)
+                .scale(width * 14)
                 .translate([width / 2, height / 2 + 10]);
 
             const path = d3.geoPath().projection(projection);
