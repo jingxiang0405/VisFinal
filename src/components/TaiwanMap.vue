@@ -2,9 +2,6 @@
 
     <div ref="mapContainer" class="map-container">
         <svg ref="canvas" class="canvas" style="width: inherit; height: inherit;">
-            <g ref="map">
-
-            </g>
         </svg>
 
     </div>
@@ -40,12 +37,13 @@ export default {
 
         drawMap() {
             console.log("drawing map");
+            d3.selectAll(".map").remove();
             // cleanup
             const container = this.$refs.mapContainer;
             const width = container.offsetWidth;
             const height = container.offsetHeight;
             const svg = d3.select(this.$refs.canvas);
-            const map = d3.select(this.$refs.map);
+            const map = svg.append("g").attr("class", "map");
 
             // Set up the projection and path generator
             const projection = d3.geoMercator()
@@ -106,13 +104,16 @@ export default {
                         .on("mouseover", null)
                         .on("mousemove", null)
                         .on("mouseout", null)
-                    d3.selectAll('.geo-path').attr('fill', '#ccc')
+                    map.selectAll('.geo-path').attr('fill', '#ccc')
                         .on("mouseover", null)
                         .on("mousemove", null)
                         .on("mouseout", null)
+                    map.selectAll(".district-path").remove();
+                    map.selectAll(".interaction-circle").remove();
 
                     self.currentFocusCounty = d.properties.COUNTYENG;
                     console.log(self.currentFocusCounty);
+
                     // draw detailed district (use Taipei for testing)
                     map.selectAll(".district-path")
                         .data(self.geoData[self.currentFocusCounty].features)
@@ -127,7 +128,7 @@ export default {
 
                     // for interaction
                     map.selectAll(".interaction-circle")
-                        .data(self.geoData["TaipeiCity"].features)
+                        .data(self.geoData[self.currentFocusCounty].features)
                         .enter()
                         .append("circle")
                         .attr("class", "interaction-circle")
@@ -140,7 +141,7 @@ export default {
                             return y;
                         })
                         .attr("r", "0.25vh")
-                        .attr("fill", "none")
+                        .attr("fill", "green")
                         .attr("pointer-events", "all")
                         .on("mouseover", (event, d) => {
                             console.log("d=", d.properties.ID)
@@ -173,7 +174,7 @@ export default {
 
                 })
 
-            // Click event for zooming back to original view
+            // zoom back
             svg.on("click", function (event) {
                 if (!event.target.closest('path')) {
                     map.selectAll('.district-path').remove()
