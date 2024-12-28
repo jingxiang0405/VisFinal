@@ -14,61 +14,28 @@
 
 <script>
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client';
-import bboxClip from '@turf/bbox-clip';
-import TopoDataService from '../services/map/TopoDataService';
+import TopoDataService from '@/services/map/TopoDataService';
 
 export default {
     name: 'TaiwanMap',
     data() {
         return {
-            geoData: {
-                "Taiwan": {
-                    topo: null
-                },
-
-                "TaipeiCity": {
-                    topo: null
-                }
-            },
+            geoData: null,
             currentFocusCounty: null, // A string of county/city name
             currentSelectedDistrictID: null
         }
     },
     mounted() {
-        this.initGeoTaiwan();
+        this.geoData = TopoDataService;
+        console.log("All geo=", this.geoData);
         window.addEventListener('resize', this.handleResize);
-        this.initGeoTaipei();
+        this.drawMap();
     },
     methods: {
         handleResize() {
             d3.select('.tooltip').style('visibility', 'hidden');
             console.log("resize")
             this.drawMap();
-
-        },
-        initGeoTaiwan() {
-            const topoTaiwan = TopoDataService.topoTaiwan;
-            let geoTaiwan = topojson.feature(topoTaiwan, topoTaiwan.objects.COUNTY_MOI_1090820);
-
-            const bbox = [119.3, 20.9, 124.6, 25.4];
-            for (let i = 0; i < geoTaiwan.features.length; i++) {
-                geoTaiwan.features[i] = bboxClip(geoTaiwan.features[i], bbox)
-            }
-
-
-            this.geoData["Taiwan"].topo = geoTaiwan;
-
-
-            this.drawMap();
-        },
-        async initGeoTaipei() {
-            const topoTaipei = TopoDataService.topoTaipei;
-            console.log(topoTaipei)
-            let geoTaipei = topojson.feature(topoTaipei, topoTaipei.objects.geometry);
-
-            this.geoData["TaipeiCity"].topo = geoTaipei;
-            console.log("taipei loaded:", this.geoData["TaipeiCity"].topo);
         },
 
         drawMap() {
@@ -107,7 +74,7 @@ export default {
             // Draw the map
             const self = this;
             map.selectAll('.geo-path')
-                .data(self.geoData["Taiwan"].topo.features)
+                .data(self.geoData["Taiwan"].features)
                 .enter().append('path')
                 .attr('d', path)
                 .attr('class', 'geo-path')
@@ -145,10 +112,10 @@ export default {
                         .on("mouseout", null)
 
                     self.currentFocusCounty = d.properties.COUNTYENG;
-
+                    console.log(self.currentFocusCounty);
                     // draw detailed district (use Taipei for testing)
                     map.selectAll(".district-path")
-                        .data(self.geoData["TaipeiCity"].topo.features)
+                        .data(self.geoData[self.currentFocusCounty].features)
                         .enter()
                         .append("path")
                         .attr("d", path)
@@ -160,7 +127,7 @@ export default {
 
                     // for interaction
                     map.selectAll(".interaction-circle")
-                        .data(self.geoData["TaipeiCity"].topo.features)
+                        .data(self.geoData["TaipeiCity"].features)
                         .enter()
                         .append("circle")
                         .attr("class", "interaction-circle")
