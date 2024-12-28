@@ -1,5 +1,5 @@
 <script>
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
 
 export default {
   name: 'App',
@@ -7,7 +7,7 @@ export default {
 </script>
 
 <template>
-  <RouterView />
+    <RouterView />
 </template>
 
 <style>
