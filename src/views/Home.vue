@@ -2,13 +2,11 @@
 
     <div class="home">
         <TaiwanMap />
-        <BarChart />
     </div>
 
 </template>
 
 <script setup>
-import BarChart from '@/components/BarChart.vue';
 import TaiwanMap from '@/components/TaiwanMap.vue';
 
 </script>
