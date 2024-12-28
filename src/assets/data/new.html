@@ -3,13 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>交通事故統計圖表</title>
+    <title>死亡受傷人數統計圖表</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        .bar {
+        .injury-bar {
             fill: steelblue;
         }
-        .bar:hover {
+        .injury-bar:hover {
+            fill: orange;
+        }
+        .death-bar {
+            fill: #97CBFF;
+        }
+        .death-bar:hover {
             fill: orange;
         }
         .axis-label {
@@ -83,6 +89,15 @@
                         break;
                     }
                 }
+                        // 提取死亡和受傷人數
+                const match = d.死亡受傷人數.match(/死亡(\d+);受傷(\d+)/);
+                if (match) {
+                    d.死亡人數 = +match[1]; // 提取並轉換為數值
+                    d.受傷人數 = +match[2]; // 提取並轉換為數值
+                } else {
+                    d.死亡人數 = 0; // 若無數據，設為0
+                    d.受傷人數 = 0; // 若無數據，設為0
+                }
                 d.行政區 = district; // 存儲行政區
             });
 
@@ -96,33 +111,46 @@
             function updateChart(selectedYear, selectedCity, selectedDistrict) {
                 const filteredData = data.filter(d => d.發生日期 === selectedYear);
                 let chartData, chartTitle;
-
+            
                 if (selectedDistrict) {
                     const districtData = filteredData.filter(d => d.行政區 === selectedDistrict);
                     chartData = Array.from(
                         d3.group(districtData, d => +d["速限-第1當事者"]),
-                        ([key, value]) => ({ name: key + " km/h", count: value.length })
+                        ([key, value]) => ({
+                            name: key + " km/h",
+                            deathCount: d3.sum(value, d => d.死亡人數), // 計算總死亡人數
+                            injuryCount: d3.sum(value, d => d.受傷人數)  // 計算總受傷人數
+                        })
                     );
-                    chartData.sort((a, b) => parseInt(a.speedLimit) - parseInt(b.speedLimit));
-
-                    chartTitle = `${selectedYear} ${selectedCity} ${selectedDistrict} 各速限交通事故數量`;
+            
+                    chartTitle = `${selectedYear} ${selectedCity} ${selectedDistrict} 各速限死亡和受傷人數`;
                 } else if (selectedCity) {
                     const cityData = filteredData.filter(d => d.縣市名稱 === selectedCity);
                     chartData = Array.from(
                         d3.group(cityData, d => d.行政區),
-                        ([key, value]) => ({ name: key, count: value.length })
+                        ([key, value]) => ({
+                            name: key,
+                            deathCount: d3.sum(value, d => d.死亡人數), // 計算總死亡人數
+                            injuryCount: d3.sum(value, d => d.受傷人數)  // 計算總受傷人數 // 計算總死亡和受傷人數
+                        })
                     );
-                    chartTitle = `${selectedYear} ${selectedCity} 各行政區交通事故數量`;
+            
+                    chartTitle = `${selectedYear} ${selectedCity} 各行政區死亡和受傷人數`;
                 } else {
                     chartData = Array.from(
                         d3.group(filteredData, d => d.縣市名稱),
-                        ([key, value]) => ({ name: key, count: value.length })
+                        ([key, value]) => ({
+                            name: key,
+                            deathCount: d3.sum(value, d => d.死亡人數), // 計算總死亡人數
+                            injuryCount: d3.sum(value, d => d.受傷人數)  // 計算總受傷人數 // 計算總死亡和受傷人數
+                        })
                     );
-                    chartTitle = `${selectedYear} 每縣市交通事故統計圖`;
+            
+                    chartTitle = `${selectedYear} 每縣市死亡和受傷人數統計圖`;
                 }
-
+            
                 renderChart("#mainChart", chartData, chartTitle);
-
+            
                 // 更新行政區選單
                 if (selectedCity) {
                     const cityData = filteredData.filter(d => d.縣市名稱 === selectedCity);
@@ -153,20 +181,22 @@
             }
 
             function renderChart(selector, chartData, chartTitle) {
-                chartData.sort((a, b) => b.count - a.count);
+                chartData.sort((a, b) => (b.deathCount + b.injuryCount) - (a.deathCount + a.injuryCount));
 
+                console.log(chartData);
+                //console.log(chartData.count);
                 const margin = {top: 40, right: 30, bottom: 60, left: 80},
                       width = 1600 - margin.left - margin.right,
                       height = 500 - margin.top - margin.bottom;
 
                 const x = d3.scaleBand()
-                    .domain(chartData.map(d => d.name))
-                    .range([0, width])
-                    .padding(0.1);
-
+                      .domain(chartData.map(d => d.name))
+                      .range([0, width])
+                      .padding(0.1);
+  
                 const y = d3.scaleLinear()
-                    .domain([0, d3.max(chartData, d => d.count)]).nice()
-                    .range([height, 0]);
+                      .domain([0, d3.max(chartData, d => Math.max(d.deathCount, d.injuryCount))]).nice()
+                      .range([height, 0]);
 
                 const svg = d3.select(selector)
                     .attr("width", width + margin.left + margin.right)
@@ -186,18 +216,18 @@
                     .text(chartTitle);
 
                 const tooltip = d3.select(".tooltip");
-
-                g.selectAll(".bar")
+                // 繪製死亡柱狀圖
+                g.selectAll(".death-bar")
                     .data(chartData)
                     .enter().append("rect")
-                    .attr("class", "bar")
+                    .attr("class", "death-bar")
                     .attr("x", d => x(d.name))
-                    .attr("y", d => y(d.count))
-                    .attr("width", x.bandwidth())
-                    .attr("height", d => height - y(d.count))
+                    .attr("y", d => y(d.deathCount))
+                    .attr("width", x.bandwidth() / 2)  // 設定死亡柱的寬度
+                    .attr("height", d => height - y(d.deathCount))
                     .on("mouseover", function(event, d) {
                         tooltip.transition().duration(200).style("opacity", .9);
-                        tooltip.html(`名稱: ${d.name}<br>事故數量: ${d.count}`)
+                        tooltip.html(`名稱: ${d.name}<br>死亡人數: ${d.deathCount}`)
                             .style("left", (event.pageX + 5) + "px")
                             .style("top", (event.pageY - 28) + "px");
                     })
@@ -222,7 +252,52 @@
                             updateChart(selectedYear, selectedCity, d.name); // 更新圖表
                         }
                     });
-                    
+
+                // 繪製受傷柱狀圖
+                g.selectAll(".injury-bar")
+                    .data(chartData)
+                    .enter().append("rect")
+                    .attr("class", "injury-bar")
+                    .attr("x", d => x(d.name) + x.bandwidth() / 2)  // 受傷柱的 x 坐標偏移
+                    .attr("y", d => y(d.injuryCount))
+                    .attr("width", x.bandwidth() / 2)  // 設定受傷柱的寬度
+                    .attr("height", d => height - y(d.injuryCount))
+                    .on("mouseover", function(event, d) {
+                        tooltip.transition().duration(200).style("opacity", .9);
+                        tooltip.html(`名稱: ${d.name}<br>受傷人數: ${d.injuryCount}`)
+                            .style("left", (event.pageX + 5) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function() {
+                        tooltip.transition().duration(500).style("opacity", 0);
+                    })
+                    .on("click", function(event, d) {
+                        console.log(d);
+                        const selectedYear = yearSelect.property("value");
+                        const selectedCity = citySelect.property("value");
+                        const selectedDistrict = districtSelect.property("value") ;
+                        if(!isNaN(d.name.slice(0, 1))){
+                            //updateChart(selectedYear, selectedCity, selectedDistrict);
+                        }
+                        else if(selectedCity === "" ){
+                            citySelect.property("value", d.name);
+                            updateChart(selectedYear, d.name, ""); // 更新圖表
+                        }
+                        else if(selectedDistrict === ""){
+                            //selectedDistrict = districtSelect.property("value", d.name);
+                            districtSelect.property("value", d.name);
+                            updateChart(selectedYear, selectedCity, d.name); // 更新圖表
+                        }
+                    });
+                // 設定柱狀圖的尺度
+                const xScale = d3.scaleBand()
+                    .domain(chartData.map(d => d.name))  // X軸是速限的名稱
+                    .range([0, width])  // 設定寬度
+                    .padding(0.1);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, d3.max(chartData, d => Math.max(d.deathCount, d.injuryCount))])  // Y軸最大值是死亡和受傷的最大值
+                    .range([height, 0]);  // 設定高度
 
                 g.append("g")
                     .attr("class", "x axis")
