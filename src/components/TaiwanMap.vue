@@ -37,6 +37,10 @@ export default {
     },
     props: {
         trafficData: Object,
+        defaultLandColor:{
+            type : String,
+            default: "#cccccc"
+        },
         landStrokeColor: {
             type: String,
             default: "#808080"
@@ -67,7 +71,7 @@ export default {
         this.initialTransform = d3.zoomIdentity.scale(1);
 
         window.addEventListener('resize', this.handleResize);
-        // this.drawMap();
+        this.drawMap();
     },
     methods: {
 
@@ -109,7 +113,7 @@ export default {
                 .enter().append('path')
                 .attr('d', self.path)
                 .attr('class', 'geo-path')
-                .attr('fill', d => self.countyColors[d.properties.COUNTYNAME].value)
+                .attr('fill', d => self.countyColors[d.properties.COUNTYNAME].value | self.$props.defaultLandColor)
                 .attr('stroke', self.$props.landStrokeColor)
                 .attr('stroke-width', 0.5)
                 .attr("pointer-events", "all")
@@ -127,10 +131,10 @@ export default {
                 .on('mouseout', function (event) {
 
                     self.tooltip.style('visibility', 'hidden');
-                    d3.select(this).attr('fill', d => self.countyColors[d.properties.COUNTYNAME].value)
+                    d3.select(this).attr('fill', d => self.countyColors[d.properties.COUNTYNAME].value | self.$props.defaultLandColor )
                 })
                 .on('click', function (_, d) {
-                    d3.select(this).attr('fiil', d => self.countyColors[d.properties.COUNTYNAME].value);
+                    d3.select(this).attr('fiil', d => self.countyColors[d.properties.COUNTYNAME].value | self.$props.defaultLandColor);
                     self.countyOnclick(this, d);
                 })
 
@@ -197,7 +201,7 @@ export default {
                         let county = d.properties.DISTRICT.substring(0, 3);
                         let district = d.properties.DISTRICT.substring(3);
                         console.log(`${county}/${district}`);
-                        return self.countyColors[county][district];
+                        return self.countyColors[county][district] | self.$props.defaultLandColor;
                 });
                 })
 

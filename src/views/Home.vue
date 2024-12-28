@@ -1,6 +1,7 @@
 <template>
 
     <div class="home">
+        <Sidebar />
         <TaiwanMap :traffic-data="trafficData" :county-colors="countyColors" :color-scale="colorScale"/>
     </div>
 
@@ -8,9 +9,10 @@
 
 <script setup>
 import TaiwanMap from '@/components/TaiwanMap.vue';
+import Sidebar from '@/components/SideBar.vue';
+
 import * as d3 from 'd3';
 import trafficData from '@/services/data/DataService';
-
 console.log("traffic=", trafficData);
 const currentInterpolator = d3.interpolateRgb("#fff7ec", "#7f0000");
 
@@ -27,8 +29,8 @@ const countyColors = Object.fromEntries(
 
         // 找出所有區域的值
         const districtValues = Object.entries(data)
-            .filter(([key, value]) => typeof value === "object") // 只選擇區域
-            .map(([key, value]) => [key, value[mainKey]]);
+            .filter(([key, value]) => typeof value === "number") // 只選擇區域
+            .map(([key, value]) => [key, value]);
 
         // 計算顏色比例尺範圍
         const maxValue = Math.max(countyValue, ...districtValues.map(([, val]) => val));
@@ -51,6 +53,8 @@ const countyColors = Object.fromEntries(
         ];
     }).filter(Boolean) // 過濾掉無法處理的縣市
 );
+
+
 
 // console.log("countyColors=", countyColors);
 
