@@ -19,13 +19,34 @@ export default {
         return {
             geoData: null,
             currentFocusCounty: null, // A string of county/city name
-            currentSelectedDistrictID: null
+            currentSelectedDistrictID: null,
+            container: null,
+            svg: null,
+            width : null,
+            height : null,
+            projection : null,
+            path : null,
+            initialTransform : null
         }
     },
     mounted() {
         this.geoData = TopoDataService;
         console.log("All geo=", this.geoData);
         window.addEventListener('resize', this.handleResize);
+
+        this.container = this.$refs.mapContainer;
+        this.width = this.container.offsetWidth;
+        this.height =  this.container.offsetHeight;
+        this.svg = d3.select(this.$refs.canvas);
+
+        // Set up the projection and path generator
+        this.projection = d3.geoMercator()
+                .center([121, 23.5]) // Centered around Taiwan
+                .scale(this.width * 14)
+                .translate([this.width / 2, this.height / 2 + 10]);
+        this.path = d3.geoPath().projection(this.projection);
+        this.initialTransform = d3.zoomIdentity.scale(1);
+
         this.drawMap();
     },
     methods: {
@@ -37,24 +58,15 @@ export default {
 
         drawMap() {
             console.log("drawing map");
-            d3.selectAll(".map").remove();
-            // cleanup
-            const container = this.$refs.mapContainer;
-            const width = container.offsetWidth;
-            const height = container.offsetHeight;
-            const svg = d3.select(this.$refs.canvas);
-            const map = svg.append("g").attr("class", "map");
 
-            // Set up the projection and path generator
-            const projection = d3.geoMercator()
-                .center([121, 23.5]) // Centered around Taiwan
-                .scale(width * 14)
-                .translate([width / 2, height / 2 + 10]);
+            // 'this' indicates d3 Object.
+            // 'self' indicates Vue execution context 
+            const self = this;
+            self.svg.selectAll(".map").remove();
 
-            const path = d3.geoPath().projection(projection);
+            const map = self.svg.append("g").attr("class", "map");
 
             // for zooming
-            const initialTransform = d3.zoomIdentity.scale(1);
             const zoom = d3.zoom()
                 .on("zoom", (event) => {
                     map.attr("transform", event.transform);
@@ -70,18 +82,17 @@ export default {
             })
 
             // Draw the map
-            const self = this;
             map.selectAll('.geo-path')
                 .data(self.geoData["Taiwan"].features)
                 .enter().append('path')
-                .attr('d', path)
+                .attr('d', self.path)
                 .attr('class', 'geo-path')
                 .attr('fill', '#ccc')
                 .attr('stroke', 'black')
                 .attr('stroke-width', 0.5)
                 .attr("pointer-events", "all")
                 .on('mouseover', function (event, d) {
-                    const tooltip = d3.select('.tooltip');
+                    
                     tooltip
                         .style('visibility', 'visible')
                         .style('left', `${event.pageX + 10}px`)
@@ -104,6 +115,7 @@ export default {
                         .on("mouseover", null)
                         .on("mousemove", null)
                         .on("mouseout", null)
+                        .on("click", null);
                     map.selectAll('.geo-path').attr('fill', '#ccc')
                         .on("mouseover", null)
                         .on("mousemove", null)
@@ -119,7 +131,7 @@ export default {
                         .data(self.geoData[self.currentFocusCounty].features)
                         .enter()
                         .append("path")
-                        .attr("d", path)
+                        .attr("d", self.path)
                         .attr("class", d => `district-path id-${d.properties.ID}`)
                         .attr("fill", "none")
                         .attr("stroke", "pink")
@@ -133,11 +145,11 @@ export default {
                         .append("circle")
                         .attr("class", "interaction-circle")
                         .attr("cx", d => {
-                            const [x] = path.centroid(d);
+                            const [x] = self.path.centroid(d);
                             return x;
                         })
                         .attr("cy", d => {
-                            const [, y] = path.centroid(d);
+                            const [, y] = self.path.centroid(d);
                             return y;
                         })
                         .attr("r", "0.25vh")
@@ -161,24 +173,24 @@ export default {
                         })
 
                     // zoom in
-                    const bounds = path.bounds(d);
+                    const bounds = self.path.bounds(d);
                     const dx = bounds[1][0] - bounds[0][0];
                     const dy = bounds[1][1] - bounds[0][1];
                     const x = (bounds[0][0] + bounds[1][0]) / 2;
                     const y = (bounds[0][1] + bounds[1][1]) / 2;
 
-                    const scale = Math.min(width / dx, height / dy) * 0.9;
-                    const translate = [width / 2 - scale * x, height / 2 - scale * y];
+                    const scale = Math.min(self.width / dx, self.height / dy) * 0.9;
+                    const translate = [self.width / 2 - scale * x, self.height / 2 - scale * y];
                     map.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
 
 
                 })
 
             // zoom back
-            svg.on("click", function (event) {
+            self.svg.on("click", function (event) {
                 if (!event.target.closest('path')) {
                     map.selectAll('.district-path').remove()
-                    map.transition().duration(750).call(zoom.transform, initialTransform);
+                    map.transition().duration(750).call(zoom.transform, self.initialTransform);
                     self.currentFocusCounty = null;
 
                     // Reset tooltip
@@ -210,6 +222,9 @@ export default {
 
         },
 
+        clearZoom(){
+
+        }
     },
 
 
