@@ -1,5 +1,5 @@
 <template>
-
+<!-- rgba(0, 0, 255, 0.5) -->
     <div ref="mapContainer" class="map-container">
         <svg ref="canvas" class="canvas" style="width: inherit; height: inherit;">
         </svg>
@@ -20,7 +20,6 @@ export default {
         return {
             geoData: null,
             currentFocusCounty: null, // A string of county/city name
-            currentSelectedDistrictID: null,
             container: null,
             svg: null,
             map: null,
@@ -30,15 +29,17 @@ export default {
             path: null,
             initialTransform: null,
             currentCountyD3: null,
+            currentCountyDistrictD3: null,
             zoom: null,
             tooltip: null,
             isInitMapScale: true,
+            colorData: null,
         }
     },
     props: {
         trafficData: Object,
-        defaultLandColor:{
-            type : String,
+        defaultLandColor: {
+            type: String,
             default: "#cccccc"
         },
         landStrokeColor: {
@@ -49,13 +50,11 @@ export default {
             type: String,
             default: "black"
         },
-        colorScale: Function,
-        countyColors: Object
 
     },
 
     mounted() {
-        console.log("countyColors=", this.countyColors)
+        console.log("colorData=", this.colorData)
         this.geoData = TopoDataService;
         this.container = this.$refs.mapContainer;
         this.width = this.container.offsetWidth;
@@ -67,6 +66,10 @@ export default {
             .center([121, 23.5]) // Centered around Taiwan
             .scale(this.width * 14)
             .translate([this.width / 2, this.height / 2 + 10]);
+
+        // test
+
+
         this.path = d3.geoPath().projection(this.projection);
         this.initialTransform = d3.zoomIdentity.scale(1);
 
@@ -74,17 +77,13 @@ export default {
         this.drawMap();
     },
     methods: {
-
-
+    
         handleResize() {
             d3.select('.tooltip').style('visibility', 'hidden');
-            console.log("resize")
             this.drawMap();
         },
 
         drawMap() {
-            console.log("drawing map");
-
             // 'this' indicates d3 Object.
             // 'self' indicates Vue execution context 
             const self = this;
@@ -97,7 +96,6 @@ export default {
             self.zoom = d3.zoom()
                 .on("zoom", (event) => {
                     d3.selectAll(".map").attr("transform", event.transform);
-
                 });
 
             // setup tooltip
@@ -113,7 +111,6 @@ export default {
                 .enter().append('path')
                 .attr('d', self.path)
                 .attr('class', 'geo-path')
-                .attr('fill', d => self.countyColors[d.properties.COUNTYNAME].value | self.$props.defaultLandColor)
                 .attr('stroke', self.$props.landStrokeColor)
                 .attr('stroke-width', 0.5)
                 .attr("pointer-events", "all")
@@ -125,26 +122,30 @@ export default {
                         .style('top', `${event.pageY + 10}px`)
                         .text(d.properties.COUNTYNAME);
 
-                    d3.select(this).attr('fill', '#ffcc00');
+                    d3.select(this).attr('stroke-width', 1);
 
                 })
-                .on('mouseout', function (event) {
+                .on('mouseout', function () {
 
                     self.tooltip.style('visibility', 'hidden');
-                    d3.select(this).attr('fill', d => self.countyColors[d.properties.COUNTYNAME].value | self.$props.defaultLandColor )
+                    d3.select(this).attr('stroke-width', 0.5);
+
                 })
                 .on('click', function (_, d) {
-                    d3.select(this).attr('fiil', d => self.countyColors[d.properties.COUNTYNAME].value | self.$props.defaultLandColor);
+
+                    d3.select(this).attr('stroke-width', 0.5);
                     self.countyOnclick(this, d);
                 })
-
+            self.drawGeoPathColor();
             // zoom back
             self.svg.on("click", function (event) {
                 if (!event.target.closest('path') && !self.isInitMapScale) {
-                    console.log("zoom back to initial.");
                     self.enableCurrentCountyD3();
+
                     self.currentCountyD3 = null;
                     self.currentFocusCounty = null;
+                    self.currentCountyDistrictD3 = null;
+
                     self.map.selectAll('.district-path').remove()
                     self.map.transition().duration(750).call(self.zoom.transform, self.initialTransform);
                     self.isInitMapScale = true;
@@ -157,13 +158,11 @@ export default {
 
             const self = this;
             self.isInitMapScale = false;
+            self.currentCountyDistrictD3 = null
+
             // If has selected a county at last move.
             if (self.currentCountyD3) {
-                console.log("zoom from county to county");
                 self.enableCurrentCountyD3();
-            } else {
-                console.log("zoom from init to county");
-
             }
             self.currentCountyD3 = d3.select(d3context);
 
@@ -172,39 +171,29 @@ export default {
             self.map.selectAll(".district-path").remove();
 
             self.currentFocusCounty = d.properties.COUNTYNAME;
-            // draw detailed district (use Taipei for testing)
-            self.map.selectAll(".district-path")
+
+            self.currentCountyDistrictD3 = self.map.selectAll(".district-path")
                 .data(self.geoData[self.currentFocusCounty].features)
                 .enter()
                 .append("path")
                 .attr("pointer-events", "visiblePainted") // Ensures only the painted area is interactive
                 .attr("d", self.path)
                 .attr("class", d => `district-path id-${d.properties.ID}`)
-                .attr("fill", "none")
-                .attr("stroke", self.$props.districtStrokeColor)
-                .attr("stroke-width", 0.5)
+                .attr("stroke-width", 0.75)
+                .attr("stroke", "black")
                 .on("mouseover", (event, d) => {
                     self.tooltip
                         .style('visibility', 'visible')
                         .style('left', `${event.pageX + 10}px`)
                         .style('top', `${event.pageY + 10}px`)
                         .text(d.properties.DISTRICT);
-                    self.currentSelectedDistrictID = d.properties.ID;
-                    d3.select(`.district-path.id-${d.properties.ID}`).attr('fill', '#ffcc00');
 
                 })
                 .on('mouseout', () => {
 
-                    this.tooltip.style('visibility', 'hidden');
-
-                    d3.select(`.district-path.id-${this.currentSelectedDistrictID}`).attr('fill', d => {
-                        let county = d.properties.DISTRICT.substring(0, 3);
-                        let district = d.properties.DISTRICT.substring(3);
-                        console.log(`${county}/${district}`);
-                        return self.countyColors[county][district] | self.$props.defaultLandColor;
-                });
+                    self.tooltip.style('visibility', 'hidden');
                 })
-
+            self.drawDistrictPathColor();
 
             // zoom in
             const bounds = self.path.bounds(d);
@@ -219,10 +208,49 @@ export default {
 
 
         },
+        drawGeoPathColor() {
+            console.log("Draw geo")
+            const self = this;
+            this.map.selectAll('.geo-path')
+                .attr('fill', d => {
+                    try {
+                        const color = self.colorData[d.properties.COUNTYNAME].sum;
+                        return color;
+                    } catch (e) {
+                        // console.error(e)
+
+                        return this.$props.defaultLandColor;
+                    }
+                })
+
+        },
+        drawDistrictPathColor() {
+            const self = this;
+            console.log("draw district")
+            self.currentCountyDistrictD3.attr("fill", (d) => {
+                let county = d.properties.DISTRICT.substring(0, 3);
+                let district = d.properties.DISTRICT.substring(3);
+                try {
+                    console.log(self.colorData[county][district])
+
+                    return self.colorData[county][district];
+                } catch (e) {
+
+                    return self.$props.defaultLandColor;
+                }
+            })
+            self.drawDefaultGetPathColor();
+        },
+        drawDefaultGetPathColor() {
+            console.log("Draw default geo")
+            this.map.selectAll('.geo-path')
+                .attr('fill', this.$props.defaultLandColor)
+        },
+
         disableCurrentCountyD3() {
             this.currentCountyD3
-                .attr('stroke', "none")
-                .attr("fill", d => this.countyColors[d.properties.COUNTYNAME].value)
+                .attr('stroke-width', "none")
+                .attr("visibility", "hide")
                 .on('click', null)
                 .on('mouseover', null)
                 .on('mouseout', null)
@@ -231,30 +259,35 @@ export default {
         enableCurrentCountyD3() {
             const self = this;
             self.currentCountyD3
-                .attr('stroke', self.$props.landStrokeColor)
-                .attr("fill", d => self.countyColors[d.properties.COUNTYNAME].value)
+                .attr("visibility", "visible")
+                .attr('stroke-width', "0.5")
                 .on('click', function (_, d) { self.countyOnclick(this, d) })
                 .on('mouseover', function (event, d) {
-                    console.log("county mouse over");
                     self.tooltip
                         .style('visibility', 'visible')
                         .style('left', `${event.pageX + 10}px`)
                         .style('top', `${event.pageY + 10}px`)
                         .text(d.properties.COUNTYNAME);
 
-                    d3.select(this).attr('fill', '#ffcc00');
-
                 })
                 .on('mouseout', function (event) {
 
                     self.tooltip.style('visibility', 'hidden');
-                    d3.select(this).attr('fill', '#ccc');
                 })
                 .on('click', function (_, d) {
                     self.countyOnclick(this, d);
                 })
+        },
+        setColorData(colorData) {
+            this.colorData = colorData;
+            console.log("ColorData Set: ", this.colorData)
+
+            this.drawGeoPathColor();
+            if (this.currentCountyDistrictD3) {
+                this.drawDistrictPathColor();
+            }
         }
-    },
+    }
 
 
 

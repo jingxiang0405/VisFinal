@@ -20,36 +20,38 @@ import Taitung from '@/assets/Taitung.json';
 import Taoyuan from '@/assets/Taoyuan.json';
 import Yilan from '@/assets/Yilan.json';
 import Yunlin from '@/assets/Yunlin.json';
+import Lienchiang from '@/assets/Lienchiang.json';
 import * as topojson from 'topojson-client';
 import bboxClip from '@turf/bbox-clip';
 
-let TaiwanGeo = null
-let ChanghuaGeo = null
-let ChiayiGeo = null
-let ChiayiCityGeo = null
-let HsinchuGeo = null
-let HsinchuCityGeo = null
-let HualianGeo = null
-let KaohsiungGeo = null
-let KeelungGeo = null
-let KinmenGeo = null
-let MiaoliGeo = null
-let NantouGeo = null
-let NewTaipeiGeo = null
-let PenghuGeo = null
-let PingtungGeo = null
-let TaichungGeo = null
-let TainanGeo = null
-let TaipeiGeo = null
-let TaitungGeo = null
-let TaoyuanGeo = null
-let YilanGeo = null
-let YunlinGeo = null
-
+let TaiwanGeo = null;
+let ChanghuaGeo = null;
+let ChiayiGeo = null;
+let ChiayiCityGeo = null;
+let HsinchuGeo = null;
+let HsinchuCityGeo = null;
+let HualianGeo = null;
+let KaohsiungGeo = null;
+let KeelungGeo = null;
+let KinmenGeo = null;
+let MiaoliGeo = null;
+let NantouGeo = null;
+let NewTaipeiGeo = null;
+let PenghuGeo = null;
+let PingtungGeo = null;
+let TaichungGeo = null;
+let TainanGeo = null;
+let TaipeiGeo = null;
+let TaitungGeo = null;
+let TaoyuanGeo = null;
+let YilanGeo = null;
+let YunlinGeo = null;
+let LienchiangGeo = null;
 function initGeoTaiwan() {
 
     TaiwanGeo = topojson.feature(Taiwan, Taiwan.objects.COUNTY_MOI_1090820);
-    const bbox = [119.3, 20.9, 124.6, 25.4];
+
+    const bbox = [119, 21.5, 122.5, 27];
     for (let i = 0; i < TaiwanGeo.features.length; i++) {
         TaiwanGeo.features[i] = bboxClip(TaiwanGeo.features[i], bbox)
     }
@@ -131,6 +133,10 @@ function initGeoYunlin() {
     YunlinGeo = topojson.feature(Yunlin, Yunlin.objects.geometry);
 }
 
+function initLienchiang() {
+    LienchiangGeo = topojson.feature(Lienchiang, Lienchiang.objects.geometry);
+}
+
 initGeoTaiwan();
 initGeoChanghua();
 initGeoChiayi();
@@ -153,6 +159,7 @@ initGeoTaitung();
 initGeoTaoyuan();
 initGeoYilan();
 initGeoYunlin();
+initLienchiang();
 
 export default {
     'Taiwan': TaiwanGeo,
@@ -176,6 +183,7 @@ export default {
     '臺東縣': TaitungGeo,
     '桃園市': TaoyuanGeo,
     '宜蘭縣': YilanGeo,
-    '雲林縣': YunlinGeo
+    '雲林縣': YunlinGeo,
+    '連江縣': LienchiangGeo
 }
 
