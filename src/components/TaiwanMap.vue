@@ -1,7 +1,6 @@
 <template>
-<!-- rgba(0, 0, 255, 0.5) -->
     <div ref="mapContainer" class="map-container">
-        <svg ref="canvas" class="canvas" style="width: inherit; height: inherit;">
+        <svg ref="canvas" class="canvas" style="background-color: rgba(0, 0, 255, 0.5);width: inherit; height: inherit;">
         </svg>
 
     </div>
@@ -97,6 +96,7 @@ export default {
                 .on("zoom", (event) => {
                     d3.selectAll(".map").attr("transform", event.transform);
                 });
+            self.svg.call(self.zoom);
 
             // setup tooltip
             self.tooltip = d3.select(".tooltip");
@@ -231,8 +231,6 @@ export default {
                 let county = d.properties.DISTRICT.substring(0, 3);
                 let district = d.properties.DISTRICT.substring(3);
                 try {
-                    console.log(self.colorData[county][district])
-
                     return self.colorData[county][district];
                 } catch (e) {
 
@@ -280,8 +278,6 @@ export default {
         },
         setColorData(colorData) {
             this.colorData = colorData;
-            console.log("ColorData Set: ", this.colorData)
-
             this.drawGeoPathColor();
             if (this.currentCountyDistrictD3) {
                 this.drawDistrictPathColor();
