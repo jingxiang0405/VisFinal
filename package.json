@@ -12,7 +12,8 @@
     "@turf/bbox-clip": "^7.1.0",
     "@turf/helpers": "^7.1.0",
     "@ungap/structured-clone": "^1.2.1",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
