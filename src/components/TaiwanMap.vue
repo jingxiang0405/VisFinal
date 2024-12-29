@@ -1,248 +1,293 @@
 <template>
-
+<!-- rgba(0, 0, 255, 0.5) -->
     <div ref="mapContainer" class="map-container">
         <svg ref="canvas" class="canvas" style="width: inherit; height: inherit;">
-            <g ref="map">
-
-            </g>
         </svg>
 
     </div>
+
     <div class="tooltip"></div>
 
 </template>
 
 <script>
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client';
-import bboxClip from '@turf/bbox-clip';
-import TopoDataService from '../services/map/TopoDataService';
+import TopoDataService from '@/services/map/TopoDataService';
 
 export default {
     name: 'TaiwanMap',
     data() {
         return {
-            geoData: {
-                "Taiwan": {
-                    topo: null
-                },
-
-                "TaipeiCity": {
-                    topo: null
-                }
-            },
+            geoData: null,
             currentFocusCounty: null, // A string of county/city name
-            currentSelectedDistrictID: null
+            container: null,
+            svg: null,
+            map: null,
+            width: null,
+            height: null,
+            projection: null,
+            path: null,
+            initialTransform: null,
+            currentCountyD3: null,
+            currentCountyDistrictD3: null,
+            zoom: null,
+            tooltip: null,
+            isInitMapScale: true,
+            colorData: null,
         }
     },
+    props: {
+        trafficData: Object,
+        defaultLandColor: {
+            type: String,
+            default: "#cccccc"
+        },
+        landStrokeColor: {
+            type: String,
+            default: "#808080"
+        },
+        districtStrokeColor: {
+            type: String,
+            default: "black"
+        },
+
+    },
+
     mounted() {
-        this.initGeoTaiwan();
+        console.log("colorData=", this.colorData)
+        this.geoData = TopoDataService;
+        this.container = this.$refs.mapContainer;
+        this.width = this.container.offsetWidth;
+        this.height = this.container.offsetHeight;
+        this.svg = d3.select(this.$refs.canvas);
+
+        // Set up the projection and path generator
+        this.projection = d3.geoMercator()
+            .center([121, 23.5]) // Centered around Taiwan
+            .scale(this.width * 14)
+            .translate([this.width / 2, this.height / 2 + 10]);
+
+        // test
+
+
+        this.path = d3.geoPath().projection(this.projection);
+        this.initialTransform = d3.zoomIdentity.scale(1);
+
         window.addEventListener('resize', this.handleResize);
-        this.initGeoTaipei();
+        this.drawMap();
     },
     methods: {
+    
         handleResize() {
             d3.select('.tooltip').style('visibility', 'hidden');
-            console.log("resize")
             this.drawMap();
-
-        },
-        initGeoTaiwan() {
-            const topoTaiwan = TopoDataService.topoTaiwan;
-            let geoTaiwan = topojson.feature(topoTaiwan, topoTaiwan.objects.COUNTY_MOI_1090820);
-
-            const bbox = [119.3, 20.9, 124.6, 25.4];
-            for (let i = 0; i < geoTaiwan.features.length; i++) {
-                geoTaiwan.features[i] = bboxClip(geoTaiwan.features[i], bbox)
-            }
-
-
-            this.geoData["Taiwan"].topo = geoTaiwan;
-
-
-            this.drawMap();
-        },
-        async initGeoTaipei() {
-            const topoTaipei = TopoDataService.topoTaipei;
-            console.log(topoTaipei)
-            let geoTaipei = topojson.feature(topoTaipei, topoTaipei.objects.geometry);
-
-            this.geoData["TaipeiCity"].topo = geoTaipei;
-            console.log("taipei loaded:", this.geoData["TaipeiCity"].topo);
         },
 
         drawMap() {
-            console.log("drawing map");
-            // cleanup
-            const container = this.$refs.mapContainer;
-            const width = container.offsetWidth;
-            const height = container.offsetHeight;
-            const svg = d3.select(this.$refs.canvas);
-            const map = d3.select(this.$refs.map);
+            // 'this' indicates d3 Object.
+            // 'self' indicates Vue execution context 
+            const self = this;
 
-            // Set up the projection and path generator
-            const projection = d3.geoMercator()
-                .center([121, 23.5]) // Centered around Taiwan
-                .scale(width * 14)
-                .translate([width / 2, height / 2 + 10]);
-
-            const path = d3.geoPath().projection(projection);
+            // clear and reappend
+            self.svg.selectAll(".map").remove();
+            self.map = self.svg.append("g").attr("class", "map");
 
             // for zooming
-            const initialTransform = d3.zoomIdentity.scale(1);
-            const zoom = d3.zoom()
+            self.zoom = d3.zoom()
                 .on("zoom", (event) => {
-                    map.attr("transform", event.transform);
-
+                    d3.selectAll(".map").attr("transform", event.transform);
                 });
 
             // setup tooltip
-            const tooltip = d3.select(".tooltip");
-
-            map.on('mousemove', function (event, d) {
-                tooltip.style('left', `${event.pageX}px`)
+            self.tooltip = d3.select(".tooltip");
+            self.map.on('mousemove', function (event, d) {
+                self.tooltip.style('left', `${event.pageX}px`)
                     .style('top', `${event.pageY - 30}px`);
             })
 
             // Draw the map
-            const self = this;
-            map.selectAll('.geo-path')
-                .data(self.geoData["Taiwan"].topo.features)
+            self.map.selectAll('.geo-path')
+                .data(self.geoData["Taiwan"].features)
                 .enter().append('path')
-                .attr('d', path)
+                .attr('d', self.path)
                 .attr('class', 'geo-path')
-                .attr('fill', '#ccc')
-                .attr('stroke', 'black')
+                .attr('stroke', self.$props.landStrokeColor)
                 .attr('stroke-width', 0.5)
                 .attr("pointer-events", "all")
                 .on('mouseover', function (event, d) {
-                    const tooltip = d3.select('.tooltip');
-                    tooltip
+
+                    self.tooltip
                         .style('visibility', 'visible')
                         .style('left', `${event.pageX + 10}px`)
                         .style('top', `${event.pageY + 10}px`)
                         .text(d.properties.COUNTYNAME);
 
-                    d3.select(this).attr('fill', '#ffcc00');
+                    d3.select(this).attr('stroke-width', 1);
 
                 })
-                .on('mouseout', function (event) {
+                .on('mouseout', function () {
 
-                    tooltip.style('visibility', 'hidden');
-                    d3.select(this).attr('fill', '#ccc');
-                })
-                .on('click', function (event, d) {
-
-
-                    d3.select(this)
-                        .attr('fill', '#ccc')
-                        .on("mouseover", null)
-                        .on("mousemove", null)
-                        .on("mouseout", null)
-                    d3.selectAll('.geo-path').attr('fill', '#ccc')
-                        .on("mouseover", null)
-                        .on("mousemove", null)
-                        .on("mouseout", null)
-
-                    self.currentFocusCounty = d.properties.COUNTYENG;
-
-                    // draw detailed district (use Taipei for testing)
-                    map.selectAll(".district-path")
-                        .data(self.geoData["TaipeiCity"].topo.features)
-                        .enter()
-                        .append("path")
-                        .attr("d", path)
-                        .attr("class", d => `district-path id-${d.properties.ID}`)
-                        .attr("fill", "none")
-                        .attr("stroke", "pink")
-                        .attr("stroke-width", 0.75)
-
-
-                    // for interaction
-                    map.selectAll(".interaction-circle")
-                        .data(self.geoData["TaipeiCity"].topo.features)
-                        .enter()
-                        .append("circle")
-                        .attr("class", "interaction-circle")
-                        .attr("cx", d => {
-                            const [x] = path.centroid(d);
-                            return x;
-                        })
-                        .attr("cy", d => {
-                            const [, y] = path.centroid(d);
-                            return y;
-                        })
-                        .attr("r", "0.25vh")
-                        .attr("fill", "none")
-                        .attr("pointer-events", "all")
-                        .on("mouseover", (event, d) => {
-                            console.log("d=", d.properties.ID)
-                            tooltip
-                                .style('visibility', 'visible')
-                                .style('left', `${event.pageX + 10}px`)
-                                .style('top', `${event.pageY + 10}px`)
-                                .text(d.properties.DISTRICT);
-                            self.currentSelectedDistrictID = d.properties.ID;
-                            d3.select(`.district-path.id-${d.properties.ID}`).attr('fill', '#ffcc00');
-
-                        })
-                        .on('mouseout', function () {
-
-                            tooltip.style('visibility', 'hidden');
-                            d3.select(`.district-path.id-${self.currentSelectedDistrictID}`).attr('fill', '#ccc');
-                        })
-
-                    // zoom in
-                    const bounds = path.bounds(d);
-                    const dx = bounds[1][0] - bounds[0][0];
-                    const dy = bounds[1][1] - bounds[0][1];
-                    const x = (bounds[0][0] + bounds[1][0]) / 2;
-                    const y = (bounds[0][1] + bounds[1][1]) / 2;
-
-                    const scale = Math.min(width / dx, height / dy) * 0.9;
-                    const translate = [width / 2 - scale * x, height / 2 - scale * y];
-                    map.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
-
+                    self.tooltip.style('visibility', 'hidden');
+                    d3.select(this).attr('stroke-width', 0.5);
 
                 })
+                .on('click', function (_, d) {
 
-            // Click event for zooming back to original view
-            svg.on("click", function (event) {
-                if (!event.target.closest('path')) {
-                    map.selectAll('.district-path').remove()
-                    map.transition().duration(750).call(zoom.transform, initialTransform);
+                    d3.select(this).attr('stroke-width', 0.5);
+                    self.countyOnclick(this, d);
+                })
+            self.drawGeoPathColor();
+            // zoom back
+            self.svg.on("click", function (event) {
+                if (!event.target.closest('path') && !self.isInitMapScale) {
+                    self.enableCurrentCountyD3();
+
+                    self.currentCountyD3 = null;
                     self.currentFocusCounty = null;
+                    self.currentCountyDistrictD3 = null;
 
-                    // Reset tooltip
-                    map.selectAll(".geo-path")
-                        .attr("stroke-width", 0.5)
-                        .on('mouseover', function (event, d) {
-                            tooltip
-                                .style('visibility', 'visible')
-                                .style('left', `${event.pageX + 10}px`)
-                                .style('top', `${event.pageY + 10}px`)
-                                .text(d.properties.COUNTYNAME);
-
-                            d3.select(this).attr('fill', '#ffcc00');
-
-                        }).on('mousemove', function (event, d) {
-
-                            // Update tooltip position
-                            tooltip
-                                .style('left', `${event.pageX}px`)
-                                .style('top', `${event.pageY - 30}px`);
-                        })
-                        .on('mouseout', function (event) {
-
-                            tooltip.style('visibility', 'hidden');
-                            d3.select(this).attr('fill', '#ccc');
-                        })
+                    self.map.selectAll('.district-path').remove()
+                    self.map.transition().duration(750).call(self.zoom.transform, self.initialTransform);
+                    self.isInitMapScale = true;
                 }
             });
 
         },
 
-    },
+        countyOnclick(d3context, d) {
+
+            const self = this;
+            self.isInitMapScale = false;
+            self.currentCountyDistrictD3 = null
+
+            // If has selected a county at last move.
+            if (self.currentCountyD3) {
+                self.enableCurrentCountyD3();
+            }
+            self.currentCountyD3 = d3.select(d3context);
+
+            self.disableCurrentCountyD3();
+
+            self.map.selectAll(".district-path").remove();
+
+            self.currentFocusCounty = d.properties.COUNTYNAME;
+
+            self.currentCountyDistrictD3 = self.map.selectAll(".district-path")
+                .data(self.geoData[self.currentFocusCounty].features)
+                .enter()
+                .append("path")
+                .attr("pointer-events", "visiblePainted") // Ensures only the painted area is interactive
+                .attr("d", self.path)
+                .attr("class", d => `district-path id-${d.properties.ID}`)
+                .attr("stroke-width", 0.75)
+                .attr("stroke", "black")
+                .on("mouseover", (event, d) => {
+                    self.tooltip
+                        .style('visibility', 'visible')
+                        .style('left', `${event.pageX + 10}px`)
+                        .style('top', `${event.pageY + 10}px`)
+                        .text(d.properties.DISTRICT);
+
+                })
+                .on('mouseout', () => {
+
+                    self.tooltip.style('visibility', 'hidden');
+                })
+            self.drawDistrictPathColor();
+
+            // zoom in
+            const bounds = self.path.bounds(d);
+            const dx = bounds[1][0] - bounds[0][0];
+            const dy = bounds[1][1] - bounds[0][1];
+            const x = (bounds[0][0] + bounds[1][0]) / 2;
+            const y = (bounds[0][1] + bounds[1][1]) / 2;
+
+            const scale = Math.min(self.width / dx, self.height / dy) * 0.9;
+            const translate = [self.width / 2 - scale * x, self.height / 2 - scale * y];
+            self.map.transition().duration(500).call(self.zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+
+
+        },
+        drawGeoPathColor() {
+            console.log("Draw geo")
+            const self = this;
+            this.map.selectAll('.geo-path')
+                .attr('fill', d => {
+                    try {
+                        const color = self.colorData[d.properties.COUNTYNAME].sum;
+                        return color;
+                    } catch (e) {
+                        // console.error(e)
+
+                        return this.$props.defaultLandColor;
+                    }
+                })
+
+        },
+        drawDistrictPathColor() {
+            const self = this;
+            console.log("draw district")
+            self.currentCountyDistrictD3.attr("fill", (d) => {
+                let county = d.properties.DISTRICT.substring(0, 3);
+                let district = d.properties.DISTRICT.substring(3);
+                try {
+                    console.log(self.colorData[county][district])
+
+                    return self.colorData[county][district];
+                } catch (e) {
+
+                    return self.$props.defaultLandColor;
+                }
+            })
+            self.drawDefaultGetPathColor();
+        },
+        drawDefaultGetPathColor() {
+            console.log("Draw default geo")
+            this.map.selectAll('.geo-path')
+                .attr('fill', this.$props.defaultLandColor)
+        },
+
+        disableCurrentCountyD3() {
+            this.currentCountyD3
+                .attr('stroke-width', "none")
+                .attr("visibility", "hide")
+                .on('click', null)
+                .on('mouseover', null)
+                .on('mouseout', null)
+        },
+
+        enableCurrentCountyD3() {
+            const self = this;
+            self.currentCountyD3
+                .attr("visibility", "visible")
+                .attr('stroke-width', "0.5")
+                .on('click', function (_, d) { self.countyOnclick(this, d) })
+                .on('mouseover', function (event, d) {
+                    self.tooltip
+                        .style('visibility', 'visible')
+                        .style('left', `${event.pageX + 10}px`)
+                        .style('top', `${event.pageY + 10}px`)
+                        .text(d.properties.COUNTYNAME);
+
+                })
+                .on('mouseout', function (event) {
+
+                    self.tooltip.style('visibility', 'hidden');
+                })
+                .on('click', function (_, d) {
+                    self.countyOnclick(this, d);
+                })
+        },
+        setColorData(colorData) {
+            this.colorData = colorData;
+            console.log("ColorData Set: ", this.colorData)
+
+            this.drawGeoPathColor();
+            if (this.currentCountyDistrictD3) {
+                this.drawDistrictPathColor();
+            }
+        }
+    }
 
 
 
