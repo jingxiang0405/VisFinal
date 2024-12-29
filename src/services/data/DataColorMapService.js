@@ -22,14 +22,12 @@ function mergeData(data) {
 }
 
 function getMaxValues(data) {
-    console.log("[MAP getmax] data=", data);
     let maxSumValue = 0;
     let maxBasicValue = 0;
 
     // Iterate over the data to find the max values
     Object.keys(data).forEach(city => {
         Object.keys(data[city]).forEach(key => {
-            console.log("[MAP getmax] data[", city, "][", key, "]=",  data[city][key])
             if (key === "sum") {
                 maxSumValue = Math.max(maxSumValue, data[city][key]);
             } else {
@@ -51,9 +49,7 @@ function getMaxValues(data) {
 function map(data) {
 
     const ndata = mergeData(data);
-    console.log("[MAP] mergedData=", ndata)
     const { maxSumValue, maxBasicValue } = getMaxValues(ndata);
-    console.log("[MAP] maxsum=", maxSumValue, ", maxbasic=", maxBasicValue);
 
     const scaleSum = d3.scaleSequential(interpolate)
         .domain([0, maxSumValue]);
