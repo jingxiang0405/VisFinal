@@ -2,11 +2,11 @@
     <div class="sidebar">
 
         <div v-for="(filter, filterKey) in filters" :key="filterKey" class="filter">
-            <div style="font-size: 40px;">{{ filterKey }}</div>
+            <div style="font-size: 24px;">{{ filterKey }}</div>
             <ul class="categories">
 
                 <div v-for="(category, categoryKey) in filter" :key="categoryKey" class="category">
-                    <span style="font-size: 24px; vertical-align: center;">{{ category }} </span>
+                    <span style="font-size: 16px; margin-top: 0.5vh;">{{ category }} </span>
 
                     <label class="switch">
                         <div>
@@ -147,8 +147,8 @@ input:checked+.slider:before {
 }
 
 .sidebar {
-    width: 250px;
-    padding: 20px;
+    width: 10vw;
+    padding-left: 1vw;
     background-color: #f4f4f4;
     border-right: 2px solid #ddd;
 }

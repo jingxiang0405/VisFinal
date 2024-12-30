@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import structuredClone from '@ungap/structured-clone';
 const url = new URL('@/assets/data/data.csv', import.meta.url).href;
-const trafficData = await d3.csv(url).then((data) => {
+function raw2TrafficData() {
 
     const result = {
         death: [],
@@ -12,69 +12,109 @@ const trafficData = await d3.csv(url).then((data) => {
         roadType: []
     };
 
-    data.forEach(row => {
-        // Extract and transform relevant data
-        const injuryData = row["死亡受傷人數"].match(/死亡(\d+);受傷(\d+)/);
-        const death = parseInt(injuryData[1], 10);
-        const injury = parseInt(injuryData[2], 10);
+    rawData.forEach(row => {
+        // Extract and transform relevant rawData
+        const death = row.death;
+        const injury = row.injury;
+
         const speedLimit = parseInt(row["速限-第1當事者"], 10);
         const longitude = parseFloat(row["經度"]);
         const latitude = parseFloat(row["緯度"]);
 
         // Extract county and district
-        const county = row["發生地點"].substring(0, 3);  // Extract county (first 3 characters)
-        const district = row["發生地點"].substring(3);  // Extract district (rest of the string)
+
+
+
 
         // Extract additional fields
         const accidentType = row["事故類別名稱"];
         const roadType = row["道路型態大類別名稱"];
 
-        // Push data into the result object
+        // Push rawData into the result object
         result.death.push({
-            date: row["發生日期"],
-            county: county,
-            district: district,
+            year: row.year,
+            month: row.month,
+            day: row.day,
+            county: row.county,
+            district: row.district,
             value: death
         });
 
         result.injury.push({
-            date: row["發生日期"],
-            county: county,
-            district: district,
+            year: row.year,
+            month: row.month,
+            day: row.day,
+            county: row.county,
+            district: row.district,
             value: injury
         });
 
         result.speedLimit.push({
-            date: row["發生日期"],
-            county: county,
-            district: district,
+            year: row.year,
+            month: row.month,
+            day: row.day,
+            county: row.county,
+            district: row.district,
             value: speedLimit
         });
 
         result.location.push({
-            date: row["發生日期"],
-            county: county,
-            district: district,
+            year: row.year,
+            month: row.month,
+            day: row.day,
+            county: row.county,
+            district: row.district,
             coordinates: { longitude, latitude }
         });
 
         result.accidentType.push({
-            date: row["發生日期"],
-            county: county,
-            district: district,
+            year: row.year,
+            month: row.month,
+            day: row.day,
+            county: row.county,
+            district: row.district,
             value: accidentType
         });
 
         result.roadType.push({
-            date: row["發生日期"],
-            county: county,
-            district: district,
+            year: row.year,
+            month: row.month,
+            day: row.day,
+            county: row.county,
+            district: row.district,
             value: roadType
         });
     });
 
     return result;
-})
+}
+
+
+
+const rawData = await d3.csv(url).then((data) => {{
+    data.forEach((d)=>{
+        const year = d["發生日期"].substring(0, 4);
+        const month = d["發生日期"].substring(4, 6);
+        const day = d["發生日期"].substring(6);
+        const county = d["發生地點"].substring(0, 3);  
+        const district = d["發生地點"].substring(3);
+        const injuryData = d["死亡受傷人數"].match(/死亡(\d+);受傷(\d+)/);
+        const death = parseInt(injuryData[1], 10);
+        const injury = parseInt(injuryData[2], 10);
+        d.year = year;
+        d.month = month;
+        d.day = day;
+        d.county = county;
+        d.district = district;
+        d.death = death;
+        d.injury = injury;
+        delete d["發生日期"];
+        delete d["發生地點"];
+        delete d["死亡受傷人數"];
+    })
+    return data
+}  });
+const trafficData = raw2TrafficData();
 
 const template = {
     "彰化縣": {
@@ -211,7 +251,7 @@ const template = {
         "左營區": 0,
         "鼓山區": 0
     },
-    "基隆市":{
+    "基隆市": {
         sum: 0,
         "仁愛區": 0,
         "信義區": 0,
@@ -220,8 +260,8 @@ const template = {
         "中正區": 0,
         "中山區": 0,
         "安樂區": 0
-      },
-      "金門縣":{
+    },
+    "金門縣": {
         sum: 0,
         "烏坵鄉": 0,
         "金城鎮": 0,
@@ -229,15 +269,15 @@ const template = {
         "金湖鎮": 0,
         "金寧鄉": 0,
         "烈嶼鄉": 0
-      },
-      "連江縣": {
+    },
+    "連江縣": {
         sum: 0,
         "南竿鄉": 0,
         "北竿鄉": 0,
         "莒光鄉": 0,
         "東引鄉": 0
-      },
-      "苗栗縣":{
+    },
+    "苗栗縣": {
         sum: 0,
         "三灣鄉": 0,
         "南庄鄉": 0,
@@ -257,8 +297,8 @@ const template = {
         "竹南鎮": 0,
         "後龍鎮": 0,
         "頭份市": 0
-      },
-      "南投縣":{
+    },
+    "南投縣": {
         sum: 0,
         "南投市": 0,
         "埔里鎮": 0,
@@ -273,8 +313,8 @@ const template = {
         "水里鄉": 0,
         "信義鄉": 0,
         "仁愛鄉": 0
-      },
-      "新北市":{
+    },
+    "新北市": {
         sum: 0,
         "永和區": 0,
         "新店區": 0,
@@ -305,8 +345,8 @@ const template = {
         "萬里區": 0,
         "金山區": 0,
         "石門區": 0
-      },
-      "澎湖縣":{
+    },
+    "澎湖縣": {
         sum: 0,
         "馬公市": 0,
         "湖西鄉": 0,
@@ -314,8 +354,8 @@ const template = {
         "西嶼鄉": 0,
         "望安鄉": 0,
         "七美鄉": 0
-      },
-      "屏東縣":{
+    },
+    "屏東縣": {
         sum: 0,
         "佳冬鄉": 0,
         "竹田鄉": 0,
@@ -350,8 +390,8 @@ const template = {
         "滿州鄉": 0,
         "枋山鄉": 0,
         "牡丹鄉": 0
-      },
-      "臺中市":{
+    },
+    "臺中市": {
         sum: 0,
         "南屯區": 0,
         "烏日區": 0,
@@ -382,8 +422,8 @@ const template = {
         "大安區": 0,
         "龍井區": 0,
         "梧棲區": 0
-      },
-      "臺南市":{
+    },
+    "臺南市": {
         sum: 0,
         "新營區": 0,
         "鹽水區": 0,
@@ -422,8 +462,8 @@ const template = {
         "東區": 0,
         "安平區": 0,
         "中西區": 0
-      },
-      "臺北市":{
+    },
+    "臺北市": {
         sum: 0,
         "大安區": 0,
         "文山區": 0,
@@ -437,8 +477,8 @@ const template = {
         "內湖區": 0,
         "士林區": 0,
         "北投區": 0
-      },
-      "臺東縣":{
+    },
+    "臺東縣": {
         sum: 0,
         "成功鎮": 0,
         "綠島鄉": 0,
@@ -456,8 +496,8 @@ const template = {
         "太麻里鄉": 0,
         "大武鄉": 0,
         "達仁鄉": 0
-      },
-      "桃園市":{
+    },
+    "桃園市": {
         sum: 0,
         "蘆竹區": 0,
         "龜山區": 0,
@@ -472,8 +512,8 @@ const template = {
         "桃園區": 0,
         "八德區": 0,
         "大溪區": 0
-      },
-      "宜蘭縣":{
+    },
+    "宜蘭縣": {
         sum: 0,
         "宜蘭市": 0,
         "羅東鎮": 0,
@@ -487,8 +527,8 @@ const template = {
         "南澳鄉": 0,
         "五結鄉": 0,
         "蘇澳鎮": 0
-      },
-      "雲林縣":{
+    },
+    "雲林縣": {
         sum: 0,
         "麥寮鄉": 0,
         "斗六市": 0,
@@ -510,24 +550,36 @@ const template = {
         "臺西鄉": 0,
         "四湖鄉": 0,
         "口湖鄉": 0
-      },
+    },
 
 
 
 };
+console.log("traffic:", trafficData)
+console.log("rawdData:", rawData)
+function getYearRange(){
+    const set = new Set();
+    Object.keys(trafficData).forEach((k)=>{
+        const arr = getVariety(k, "year");
+        arr.forEach((i)=> {set.add(i)})
+    })
+    return Array.from(set);
+}
+
 /* !! For SpeedLimit !!*/
-function getVariety(category) {
+function getVariety(category, target) {
+    if(target === undefined) target = "value"
     try {
         const set = new Set();
         trafficData[category].forEach((record) => {
-            set.add(record.value)
+            set.add(record[target])
         })
 
         return Array.from(set)
 
     }
     catch (e) {
-        console.error("Error: improper category name")
+        console.error(e)
     }
 
 }
@@ -545,7 +597,7 @@ function countValueByCategory(categories) {
             const numericValue = Number(value);
 
             if (isNaN(numericValue)) return;
-    
+
 
             result[county].sum += numericValue;
 
@@ -574,7 +626,7 @@ function countTimesByCategory(categoryObj) {
             result[value] = structuredClone(template);
         }
 
-        result[value][county].sum  += 1;
+        result[value][county].sum += 1;
 
 
 
@@ -585,8 +637,10 @@ function countTimesByCategory(categoryObj) {
 }
 
 export default {
+    rawData: rawData,
     trafficData: trafficData,
     getVariety: getVariety,
+    getYearRange: getYearRange,
     countTimes: countTimesByCategory,
     countValues: countValueByCategory
 }

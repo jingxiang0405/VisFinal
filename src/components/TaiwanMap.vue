@@ -36,7 +36,6 @@ export default {
         }
     },
     props: {
-        trafficData: Object,
         defaultLandColor: {
             type: String,
             default: "#cccccc"
@@ -96,7 +95,7 @@ export default {
                 .on("zoom", (event) => {
                     d3.selectAll(".map").attr("transform", event.transform);
                 });
-            self.svg.call(self.zoom);
+            // self.svg.call(self.zoom);
 
             // setup tooltip
             self.tooltip = d3.select(".tooltip");
@@ -132,9 +131,10 @@ export default {
 
                 })
                 .on('click', function (_, d) {
-
                     d3.select(this).attr('stroke-width', 0.5);
                     self.countyOnclick(this, d);
+                    self.$emit("select-new-place", d.properties.COUNTYNAME);
+
                 })
             self.drawGeoPathColor();
             // zoom back
@@ -149,6 +149,9 @@ export default {
                     self.map.selectAll('.district-path').remove()
                     self.map.transition().duration(750).call(self.zoom.transform, self.initialTransform);
                     self.isInitMapScale = true;
+
+                    self.$emit("select-new-place", "");
+
                 }
             });
 
@@ -305,7 +308,7 @@ export default {
 }
 
 .map-container {
-    width: 50vw;
+    width: 35vw;
     height: 100vh;
     border: thick double black;
     margin: 1vh;

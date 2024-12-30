@@ -69,8 +69,9 @@
     <button id="backButtoncity" style="display: none;">返回行政區層級</button>
     <button id="backButtontaiwan" style="display: none;">返回縣市層級</button>
     <script>
-        d3.csv("filtered_data.csv").then(function(data) {
+        d3.csv("data.csv").then(function(data) {
             data.forEach(function(d) {
+
                 d.發生日期 = d.發生日期.slice(0, 4); // 提取年份
                 d.縣市名稱 = d.發生地點.slice(0, 3); // 提取縣市名稱
                 const location = d.發生地點.slice(3, 6); // 從第4個字開始擷取
@@ -95,10 +96,12 @@
 
             function updateChart(selectedYear, selectedCity, selectedDistrict) {
                 const filteredData = data.filter(d => d.發生日期 === selectedYear);
+                console.log("filtered",filteredData)
                 let chartData, chartTitle;
 
                 if (selectedDistrict) {
                     const districtData = filteredData.filter(d => d.行政區 === selectedDistrict);
+                    console.log(districtData)
                     chartData = Array.from(
                         d3.group(districtData, d => +d["速限-第1當事者"]),
                         ([key, value]) => ({ name: key + " km/h", count: value.length })
