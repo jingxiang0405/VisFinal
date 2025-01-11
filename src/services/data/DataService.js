@@ -1,83 +1,5 @@
 import * as d3 from "d3";
-import structuredClone from '@ungap/structured-clone';
 const url = new URL('@/assets/data/data.csv', import.meta.url).href;
-function categorizeData() {
-
-    const result = {
-        death: [],
-        injury: [],
-        speedLimit: [],
-        location: [],
-        accidentType: [],
-        roadType: []
-    };
-
-    rawData.forEach(row => {
-        // Extract and transform relevant rawData
-        const death = row.death;
-        const injury = row.injury;
-        const longitude = row.longitude;
-        const latitude = row.latitude;
-
-        // Push rawData into the result object
-        result.death.push({
-            year: row.year,
-            month: row.month,
-            day: row.day,
-            county: row.county,
-            district: row.district,
-            value: death
-        });
-
-        result.injury.push({
-            year: row.year,
-            month: row.month,
-            day: row.day,
-            county: row.county,
-            district: row.district,
-            value: injury
-        });
-
-        result.speedLimit.push({
-            year: row.year,
-            month: row.month,
-            day: row.day,
-            county: row.county,
-            district: row.district,
-            value: row.speedLimit
-        });
-
-        result.location.push({
-            year: row.year,
-            month: row.month,
-            day: row.day,
-            county: row.county,
-            district: row.district,
-            coordinates: { longitude, latitude }
-        });
-
-        result.accidentType.push({
-            year: row.year,
-            month: row.month,
-            day: row.day,
-            county: row.county,
-            district: row.district,
-            value: row.accidentType
-        });
-
-        result.roadType.push({
-            year: row.year,
-            month: row.month,
-            day: row.day,
-            county: row.county,
-            district: row.district,
-            value: row.roadType
-        });
-    });
-
-    return result;
-}
-
 
 
 const rawData = await d3.csv(url).then((data) => {
@@ -319,7 +241,7 @@ class DataBuilder {
 }
 
 console.log("rawdData:", rawData)
-console.log(new DataBuilder().keep(['county', 'district', 'accidentType']).countTimesByIndex(['county', 'district'], { accidentType: ['A2', 'A1'] }).build())
+// console.log(new DataBuilder().keep(['county', 'district', 'accidentType']).countTimesByIndex(['county', 'district'], { accidentType: ['A2', 'A1'] }).build())
 
 
 export default {

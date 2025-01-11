@@ -4,26 +4,27 @@ const interpolate = d3.interpolateRgb("#fff7ec", "#7f0000");
 
 function mergeData(data) {
     const result = {};
-
-    Object.entries(data).forEach((key, value)=>{
+    Object.entries(data).forEach(([key, value])=>{
+        value.forEach((datum)=>{
+            const county = datum.county;
+            const district = datum.district;
+            const count = datum.count;
+            if(!result[county])result[county] = {} 
+            result[county][district] = (result[county][district] || 0) + count;
+        })
 
     })
-    // for (const key in data) {
-    //     if (data.hasOwnProperty(key)) {
-    //         for (const subKey in data[key]) {
-    //             if (data[key].hasOwnProperty(subKey)) {
-    //                 // Merge inner keys with sums
-    //                 result[subKey] = result[subKey] || {};
-    //                 for (const innerKey in data[key][subKey]) {
-    //                     result[subKey][innerKey] =
-    //                         (result[subKey][innerKey] || 0) + data[key][subKey][innerKey];
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+
+    Object.entries(result).forEach(([key, value])=>{
+        let sum = 0;
+        Object.values(value).forEach((v)=>{
+            sum += v;
+        })
+        value.sum = sum;
+    })
     return result;
 }
+
 
 function getMaxValues(data) {
     let maxSumValue = 0;
@@ -51,7 +52,6 @@ function getMaxValues(data) {
 
 
 function map(data) {
-
     const ndata = mergeData(data);
     const { maxSumValue, maxBasicValue } = getMaxValues(ndata);
 

@@ -78,7 +78,7 @@ export default {
     
         handleResize() {
             d3.select('.tooltip').style('visibility', 'hidden');
-            this.drawMap();
+            // this.drawMap();
         },
 
         drawMap() {
