@@ -40,7 +40,7 @@ function onFilterChange(checkedFilters){
     const data = service(para);
     console.log("processed data:", data)
     const colorData = DataColorMapService.map(data);
-    
+    console.log("colorData:", colorData)
     mapRef.value.setColorData(colorData);
 
 }
