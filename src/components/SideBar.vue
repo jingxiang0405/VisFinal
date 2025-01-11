@@ -29,9 +29,6 @@ export default {
     data() {
         return {
             filters: {
-                casualty: { injury: "受傷", death: "死亡" },
-
-                // casualty: { injury: "Injury", death: "Death" },
                 accidentType: { A1: "A1", A2: "A2" },
                 roadType: { 交岔路: "交岔路", 單路部分: "單路部分", 圓環廣場: "圓環廣場" },
                 speedLimit: []

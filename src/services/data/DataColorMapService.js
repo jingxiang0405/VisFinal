@@ -4,20 +4,24 @@ const interpolate = d3.interpolateRgb("#fff7ec", "#7f0000");
 
 function mergeData(data) {
     const result = {};
-    for (const key in data) {
-        if (data.hasOwnProperty(key)) {
-            for (const subKey in data[key]) {
-                if (data[key].hasOwnProperty(subKey)) {
-                    // Merge inner keys with sums
-                    result[subKey] = result[subKey] || {};
-                    for (const innerKey in data[key][subKey]) {
-                        result[subKey][innerKey] =
-                            (result[subKey][innerKey] || 0) + data[key][subKey][innerKey];
-                    }
-                }
-            }
-        }
-    }
+
+    Object.entries(data).forEach((key, value)=>{
+
+    })
+    // for (const key in data) {
+    //     if (data.hasOwnProperty(key)) {
+    //         for (const subKey in data[key]) {
+    //             if (data[key].hasOwnProperty(subKey)) {
+    //                 // Merge inner keys with sums
+    //                 result[subKey] = result[subKey] || {};
+    //                 for (const innerKey in data[key][subKey]) {
+    //                     result[subKey][innerKey] =
+    //                         (result[subKey][innerKey] || 0) + data[key][subKey][innerKey];
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
     return result;
 }
 

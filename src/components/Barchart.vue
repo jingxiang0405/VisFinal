@@ -28,7 +28,6 @@ export default {
             selectedCounty: "",
             selectedDistrict: "",
             selectedYear: "",
-            categories: [],
             minYear: 0,
             maxYear: 0
         }
@@ -36,7 +35,7 @@ export default {
     },
 
     props: {
-        rawData: {
+        chartData: {
             default: null,
             required: true,
 
@@ -45,8 +44,6 @@ export default {
 
     mounted() {
         this.$emit("request-year-range");
-        console.log("Year range:", this.years)
-
         this.draw();
     },
 
@@ -55,125 +52,26 @@ export default {
 
         draw() {
 
-            console.log("draw()");
+            // console.log("draw()");
             const self = this;
-            const selectedCategories = Object.values(self.categories)[0];
 
-            const isCountable = ['injury', 'death'].includes(selectedCategories)
-            // fixme
-            if (isCountable) return;
+            // console.log("[Barchart]data", self.$props.chartData)
 
-            const originalData = self.$props.rawData;
-            console.log("[Barchart]OriginalData:", originalData);
-            console.log("[Barchart]selectedYear:", self.selectedYear);
-            console.log("[Barchart]selectedCategories:", selectedCategories);
-            let categoryFilderedData = originalData
-
-            // TODO Filter original data
-            if (selectedCategories) {
-
-
-                
-                categoryFilderedData = originalData.map((record) => {
-                    return Object.entries(record).filter(([key, value]) => value in selectedCategories)
-                })
-
-            }
-            if (selectedCategories) {
-
-                // categoryFilderedData = self.$props.rawData.filter(()=>)
-
-                // selectedCategories.forEach(category => {
-                //     const obj = self.rawData[category];
-                //     console.log("obj=",obj)
-                //     categoryFilderedData.push(obj)
-                // })
-            }
-            console.log("[Barchart]category filtered", categoryFilderedData)
-
-            let timeFilteredData = []
-
-            if (this.selectedYear === "") {
-                console.log("[Barchart]selectedYear is empty")
-                timeFilteredData = categoryFilderedData;
-            }
-            else {
-                Object.keys(categoryFilderedData).forEach(k => {
-                    let filtered = (k, categoryFilderedData[k].filter(d => Number(d.year) === self.selectedYear));
-                    timeFilteredData.push(filtered);
-                })
-            }
-
-            console.log("time filtered", timeFilteredData);
-            let chartData = [], chartTitle;
-
-            if (self.selectedDistrict) {
-                // const districtData = timeFilteredData.filter(d => d.distict === self.selectedDistrict);
-                // chartData = Array.from(
-                //     d3.group(districtData, d => +d["速限-第1當事者"]),
-                //     ([key, value]) => ({
-                //         name: key + " km/h",
-                //         deathCount: d3.sum(value, d => d.死亡人數), // 計算總死亡人數
-                //         injuryCount: d3.sum(value, d => d.受傷人數)  // 計算總受傷人數
-                //     })
-                // );
-
-                // chartTitle = `${self.selectedYear} ${self.selectedCounty} ${self.selectedDistrict} 各速限死亡和受傷人數`;
-            } else if (self.selectedCounty) {
-
-                // const cityData = timeFilteredData.filter(d => d.county === self.selectedCounty);
-                // chartData = Array.from(
-                //     d3.group(cityData, d => d.distict),
-                //     ([key, value]) => ({
-                //         name: key,
-                //         deathCount: d3.sum(value, d => d.死亡人數),
-                //         injuryCount: d3.sum(value, d => d.受傷人數) 
-                //     })
-                // );
-
-                // chartTitle = `${self.selectedYear} ${self.selectedCounty} ${self.categories[0]}/${self.categories[1]}`;
-            } else {
-                // chartData = Array.from(
-                //     d3.group(timeFilteredData, d => d.county),
-                //     ([key, value]) => ({
-                //         name: key,
-                //         deathCount: d3.sum(value, d => d.死亡人數), 
-                //         injuryCount: d3.sum(value, d => d.受傷人數) 
-                //     })
-                // );
-
-                chartTitle = `${self.selectedYear} 每county死亡和受傷人數統計圖`;
-            }
-
-            this.renderChart("#mainChart", chartData, chartTitle);
-
-
-            // 顯示/隱藏返回按鈕
-            if (self.selectedDistrict) {
-                d3.select("#backButtoncity").style("display", "inline-block");
-                d3.select("#backButtontaiwan").style("display", "none");
-            } else if (self.selectedCounty) {
-                d3.select("#backButtoncity").style("display", "none");
-                d3.select("#backButtontaiwan").style("display", "inline-block");
-            } else {
-                d3.select("#backButtoncity").style("display", "none");
-                d3.select("#backButtontaiwan").style("display", "none");
-            }
-        },
-        renderChart(selector, chartData, chartTitle) {
-            chartData.sort((a, b) => (b.deathCount + b.injuryCount) - (a.deathCount + a.injuryCount));
+            if(!self.$props.chartData)return;
+            let chartTitle;
+            this.$props.chartData.sort((a, b) => (b.deathCount + b.injuryCount) - (a.deathCount + a.injuryCount));
             //console.log(chartData.count);
             const margin = { top: 40, right: 30, bottom: 60, left: 80 },
                 width = 1600 - margin.left - margin.right,
                 height = 500 - margin.top - margin.bottom;
 
             const x = d3.scaleBand()
-                .domain(chartData.map(d => d.name))
+                .domain(this.$props.chartData.map(d => d.name))
                 .range([0, width])
                 .padding(0.1);
 
             const y = d3.scaleLinear()
-                .domain([0, d3.max(chartData, d => Math.max(d.deathCount, d.injuryCount))]).nice()
+                .domain([0, d3.max(this.$props.chartData, d => Math.max(d.deathCount, d.injuryCount))]).nice()
                 .range([height, 0]);
 
             const svg = d3.select(selector)
@@ -196,7 +94,7 @@ export default {
             const tooltip = d3.select(".tooltip");
             // 繪製死亡柱狀圖
             g.selectAll(".death-bar")
-                .data(chartData)
+                .data(this.$props.chartData)
                 .enter().append("rect")
                 .attr("class", "death-bar")
                 .attr("x", d => x(d.name))
@@ -233,7 +131,7 @@ export default {
 
             // 繪製受傷柱狀圖
             g.selectAll(".injury-bar")
-                .data(chartData)
+                .data(this.$props.chartData)
                 .enter().append("rect")
                 .attr("class", "injury-bar")
                 .attr("x", d => x(d.name) + x.bandwidth() / 2)  // 受傷柱的 x 坐標偏移
@@ -269,12 +167,12 @@ export default {
                 });
             // 設定柱狀圖的尺度
             const xScale = d3.scaleBand()
-                .domain(chartData.map(d => d.name))  // X軸是速限的名稱
+                .domain(this.$props.chartData.map(d => d.name))  // X軸是速限的名稱
                 .range([0, width])  // 設定寬度
                 .padding(0.1);
 
             const yScale = d3.scaleLinear()
-                .domain([0, d3.max(chartData, d => Math.max(d.deathCount, d.injuryCount))])  // Y軸最大值是死亡和受傷的最大值
+                .domain([0, d3.max(this.$props.chartData, d => Math.max(d.deathCount, d.injuryCount))])  // Y軸最大值是死亡和受傷的最大值
                 .range([height, 0]);  // 設定高度
 
             g.append("g")
