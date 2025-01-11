@@ -28,36 +28,41 @@ export default {
             selectedCounty: "",
             selectedDistrict: "",
             selectedYear: "",
-            minYear: 0,
-            maxYear: 0
+            years: [],
+            chartData: undefined,
         }
 
     },
 
     props: {
-        chartData: {
-            default: null,
-            required: true,
 
-        }
     },
 
     mounted() {
-        this.$emit("request-year-range");
         this.draw();
     },
 
     methods: {
 
+        setChartData(data){
+            console.log("SetChartData")
+            this.chartData = data;
+            this.draw();
+        },
 
+        setYears(years){
+            console.log("SetYears")
+            this.years = years;
+        },
         draw() {
 
-            // console.log("draw()");
             const self = this;
 
-            // console.log("[Barchart]data", self.$props.chartData)
 
-            if(!self.$props.chartData)return;
+            if(this.chartData === undefined)return;
+            console.log("[Barchart]data", this.chartData)
+            console.log("draw()");
+
             let chartTitle;
             this.$props.chartData.sort((a, b) => (b.deathCount + b.injuryCount) - (a.deathCount + a.injuryCount));
             //console.log(chartData.count);
@@ -186,10 +191,7 @@ export default {
                 .attr("class", "y axis")
                 .call(d3.axisLeft(y));
         },
-        setYear(min, max) {
-            this.minYear = min;
-            this.maxYear = max;
-        },
+ 
         setPlace(county, district) {
             this.selectedCounty = county;
             this.selectedDistrict = district;
@@ -202,19 +204,6 @@ export default {
         }
     },
 
-
-    watch: {
-        selectedCounty: "this.draw",
-        selectedDistrict: "this.draw",
-        selectedYeat: "this.draw",
-        categories: "this.draw",
-    },
-
-    computed: {
-        years() {
-            return Array.from({ length: this.maxYear - this.minYear + 1 }, (_, i) => this.minYear + i);
-        },
-    },
 }
 
 

@@ -162,7 +162,7 @@ export default {
             const self = this;
             self.isInitMapScale = false;
             self.currentCountyDistrictD3 = null
-
+            
             // If has selected a county at last move.
             if (self.currentCountyD3) {
                 self.enableCurrentCountyD3();
@@ -174,7 +174,7 @@ export default {
             self.map.selectAll(".district-path").remove();
 
             self.currentFocusCounty = d.properties.COUNTYNAME;
-
+            
             self.currentCountyDistrictD3 = self.map.selectAll(".district-path")
                 .data(self.geoData[self.currentFocusCounty].features)
                 .enter()

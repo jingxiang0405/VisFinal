@@ -3,7 +3,7 @@
     <div class="home">
         <Sidebar @update-filter="onFilterChange" />
         <TaiwanMap @select-new-place="onSelectNewPlace" ref="mapRef" />
-        <Barchart @request-year-range="requestYearRange" ref="chartRef" :chart-data="chartData" />
+        <Barchart @request-year-range="requestYearRange" ref="chartRef" />
     </div>
 
 </template>
@@ -21,44 +21,55 @@ const chartRef = ref(null);
 const years = new DataService.DataBuilder()
     .keep('year')
     .unique()
-    .build();
-console.log('years:', years)
-let chartData = null;
+    .build()
+    .map(element => {
+        return element.year
+    });
+let data = null;
+let filters = [];
+let checked = []
+let keepingColumns = ['county', 'district', 'injury', 'death']
+let indexes = ['county'];
 
-function requestYearRange() {
-    chartRef.value.setYear(Number(Math.min(years)), Number(Math.max(years)));
-}
 
 // checkedFilters: an array of filtered value
 function onFilterChange(checkedFilters) {
-
+    console.log("[FilterChange]: ", data)
+    checked = checkedFilters;
     const key = Object.keys(checkedFilters)[0];
     if (key === undefined) {
         mapRef.value.setColorData(null);
-        chartRef.value.setCategories([]);
         return;
     }
-
-    const extractColumns = ['county', 'district', 'injury', 'death', key];
-    console.log('cols=', extractColumns, 'key=', key)
-    const data = new DataService.DataBuilder().keep(extractColumns).countTimesByIndex(['county', 'district'], checkedFilters).build();
-     console.log("processed data:", data)
+    filters = keepingColumns.concat([key]);
+    data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
+    console.log("processed data:", data)
     const colorData = DataColorMapService.map(data);
-    console.log('colorData:', colorData)
+    console.log("color data:", colorData);
     mapRef.value.setColorData(colorData);
+    chartRef.value.setChartData(data)
+    chartRef.value.setYears(years);
+
 }
 
 /*
     placeString = [County]/[District]
 */
 function onSelectNewPlace(placeString) {
+    console.log("[NewPlace]: ", data)
+
+
     if (placeString.length === 0) {
-        chartRef.value.setPlace("", "");
+        console.log("No selection")
+        indexes = ['county'];
+        data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
         return;
     }
     const place = placeString.split('/');
     if (place.length === 1) {
-        chartRef.value.setPlace(place[0], "");
+        console.log("County selection")
+        indexes = ['county', 'district'];
+        data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
         return;
     }
 
