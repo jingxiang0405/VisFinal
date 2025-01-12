@@ -36,7 +36,6 @@ export default {
         }
     },
     props: {
-        trafficData: Object,
         defaultLandColor: {
             type: String,
             default: "#cccccc"
@@ -78,7 +77,7 @@ export default {
     
         handleResize() {
             d3.select('.tooltip').style('visibility', 'hidden');
-            this.drawMap();
+            // this.drawMap();
         },
 
         drawMap() {
@@ -130,9 +129,10 @@ export default {
 
                 })
                 .on('click', function (_, d) {
-
                     d3.select(this).attr('stroke-width', 0.5);
                     self.countyOnclick(this, d);
+                    self.$emit("select-new-place", d.properties.COUNTYNAME);
+
                 })
             self.drawGeoPathColor();
             // zoom back
@@ -147,6 +147,9 @@ export default {
                     self.map.selectAll('.district-path').remove()
                     self.map.transition().duration(750).call(self.zoom.transform, self.initialTransform);
                     self.isInitMapScale = true;
+
+                    self.$emit("select-new-place", "");
+
                 }
             });
 
@@ -157,7 +160,7 @@ export default {
             const self = this;
             self.isInitMapScale = false;
             self.currentCountyDistrictD3 = null
-
+            
             // If has selected a county at last move.
             if (self.currentCountyD3) {
                 self.enableCurrentCountyD3();
@@ -169,7 +172,7 @@ export default {
             self.map.selectAll(".district-path").remove();
 
             self.currentFocusCounty = d.properties.COUNTYNAME;
-
+            
             self.currentCountyDistrictD3 = self.map.selectAll(".district-path")
                 .data(self.geoData[self.currentFocusCounty].features)
                 .enter()
@@ -300,7 +303,7 @@ export default {
 }
 
 .map-container {
-    width: 50vw;
+    width: 30vw;
     height: 100vh;
     border: thick double black;
     margin: 1vh;
