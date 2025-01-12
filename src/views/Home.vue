@@ -31,10 +31,8 @@ let checked = []
 let keepingColumns = ['county', 'district', 'injury', 'death']
 let indexes = ['county'];
 
-
 // checkedFilters: an array of filtered value
 function onFilterChange(checkedFilters) {
-    console.log("[FilterChange]: ", data)
     checked = checkedFilters;
     const key = Object.keys(checkedFilters)[0];
     if (key === undefined) {
@@ -43,17 +41,17 @@ function onFilterChange(checkedFilters) {
     }
     filters = keepingColumns.concat([key]);
     data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
-    console.log("processed data:", data)
     const colorData = DataColorMapService.map(data);
-    console.log("color data:", colorData);
     mapRef.value.setColorData(colorData);
-    chartRef.value.setChartData(data)
+
     chartRef.value.setYears(years);
+    chartRef.value.setChartData(data)
+    chartRef.value.draw();
 
 }
 
 /*
-    placeString = [County]/[District]
+    placeString = [County]
 */
 function onSelectNewPlace(placeString) {
     console.log("[NewPlace]: ", data)
@@ -62,19 +60,20 @@ function onSelectNewPlace(placeString) {
     if (placeString.length === 0) {
         console.log("No selection")
         indexes = ['county'];
-        data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
-        return;
     }
-    const place = placeString.split('/');
-    if (place.length === 1) {
+
+    else{
         console.log("County selection")
         indexes = ['county', 'district'];
-        data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
-        return;
     }
+    data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
+    const colorData = DataColorMapService.map(data);
+    mapRef.value.setColorData(colorData);
 
-    chartRef.value.setPlace(place[0], place[1]);
-
+    chartRef.value.setYears(years);
+    chartRef.value.setSelectedCounty(placeString);
+    chartRef.value.setChartData(data)
+    chartRef.value.draw();
 }
 </script>
 

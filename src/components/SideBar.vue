@@ -144,7 +144,7 @@ input:checked+.slider:before {
 }
 
 .sidebar {
-    width: 10vw;
+    width: 7.5vw;
     padding-left: 1vw;
     background-color: #f4f4f4;
     border-right: 2px solid #ddd;

@@ -308,7 +308,7 @@ export default {
 }
 
 .map-container {
-    width: 35vw;
+    width: 30vw;
     height: 100vh;
     border: thick double black;
     margin: 1vh;

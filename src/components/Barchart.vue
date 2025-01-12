@@ -1,7 +1,7 @@
 <template>
     <div class="componet-barchart">
         <div style="overflow-x: auto; width: 100%;">
-            <svg id="mainChart" width="1600" height="550"></svg>
+            <svg id="mainChart"></svg>
         </div>
         <div class="tooltip"></div>
         <label for="yearSelect">選擇年份:</label>
@@ -26,7 +26,6 @@ export default {
 
         return {
             selectedCounty: "",
-            selectedDistrict: "",
             selectedYear: "",
             years: [],
             chartData: undefined,
@@ -44,164 +43,148 @@ export default {
 
     methods: {
 
-        setChartData(data){
-            console.log("SetChartData")
+        setChartData(data) {
             this.chartData = data;
-            this.draw();
         },
 
-        setYears(years){
-            console.log("SetYears")
+        setYears(years) {
             this.years = years;
         },
         draw() {
+            console.log("[Barchart]data", this.chartData)
 
             const self = this;
 
+            if (this.chartData === undefined || Object.keys(self.chartData)[0] == "undefined") return;
 
-            if(this.chartData === undefined)return;
-            console.log("[Barchart]data", this.chartData)
-            console.log("draw()");
 
-            let chartTitle;
-            this.$props.chartData.sort((a, b) => (b.deathCount + b.injuryCount) - (a.deathCount + a.injuryCount));
-            //console.log(chartData.count);
-            const margin = { top: 40, right: 30, bottom: 60, left: 80 },
-                width = 1600 - margin.left - margin.right,
-                height = 500 - margin.top - margin.bottom;
+            const domains = Object.keys(self.chartData);
+            let bands;
 
-            const x = d3.scaleBand()
-                .domain(this.$props.chartData.map(d => d.name))
-                .range([0, width])
+            const bandType = (self.selectedCounty.length === 0) ? 'county' : 'district'
+
+            let set = new Set();
+            Object.entries(self.chartData).forEach(([_, dataPerDomain]) => {
+
+                dataPerDomain.forEach((data) => {
+                    if (bandType == 'county' || data.county == self.selectedCounty) {
+                        set.add(data[bandType]);
+                    }
+                })
+            })
+
+
+            bands = Array.from(set);
+
+            const processedData = bands.map(b => {
+                const entry = { b };
+                domains.forEach(domain => {
+                    const found = self.chartData[domain].find(d => d[bandType] === b);
+                    entry[domain] = found ? found.count : 0;
+                });
+                return entry;
+            }).sort((a, b) => a.value - b.value);
+
+            console.log('processed:', processedData)
+
+            let title = "";
+            const svg = d3.select("#mainChart");
+            svg.selectAll("*").remove();
+
+            const width = parseFloat(svg.style("width"));
+            const height = parseFloat(svg.style("height"));
+            const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+            // Scales
+            const x0 = d3.scaleBand()
+                .domain(bands)
+                .range([0, chartWidth])
+                .padding(0.2);
+
+            const x1 = d3.scaleBand()
+                .domain(domains)
+                .range([0, x0.bandwidth()])
                 .padding(0.1);
 
             const y = d3.scaleLinear()
-                .domain([0, d3.max(this.$props.chartData, d => Math.max(d.deathCount, d.injuryCount))]).nice()
-                .range([height, 0]);
+                .domain([0, d3.max(processedData.flatMap(d => domains.map(domain => d[domain])))])
+                .range([chartHeight, 0])
 
-            const svg = d3.select(selector)
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom);
+            const color = d3.scaleOrdinal()
+                .domain(domains)
+                .range(d3.schemeCategory10);
 
-            svg.selectAll("*").remove(); // 清空舊圖表
+            const barPadding = 0.05; // Padding between bars in a group
+            const adjustedBarWidth = (x0.bandwidth() - barPadding * (domains.length - 1)) / domains.length;
 
-            const g = svg.append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            // Create chart group
+            const chart = svg.append("g")
+                .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-            g.append("text")
-                .attr("x", width / 2)
-                .attr("y", -10)
-                .attr("text-anchor", "middle")
-                .style("font-size", "20px")
-                .style("font-weight", "bold")
-                .text(chartTitle);
+            // Add axes
+            const xAxis = d3.axisBottom(x0);
+            const yTick = y.ticks()
+                .filter(tick => Number.isInteger(tick));
+            const yAxis = d3.axisLeft(y).tickValues(yTick).tickFormat(d3.format('d'))
 
-            const tooltip = d3.select(".tooltip");
-            // 繪製死亡柱狀圖
-            g.selectAll(".death-bar")
-                .data(this.$props.chartData)
-                .enter().append("rect")
-                .attr("class", "death-bar")
-                .attr("x", d => x(d.name))
-                .attr("y", d => y(d.deathCount))
-                .attr("width", x.bandwidth() / 2)  // 設定死亡柱的寬度
-                .attr("height", d => height - y(d.deathCount))
-                .on("mouseover", function (event, d) {
-                    tooltip.transition().duration(200).style("opacity", .9);
-                    tooltip.html(`名稱: ${d.name}<br>死亡人數: ${d.deathCount}`)
-                        .style("left", (event.pageX + 5) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function () {
-                    tooltip.transition().duration(500).style("opacity", 0);
-                })
-                .on("click", function (event, d) {
-                    console.log(d);
-                    self.selectedYear = yearSelect.property("value");
-                    self.selectedCounty = citySelect.property("value");
-                    self.selectedDistrict = districtSelect.property("value");
-                    if (!isNaN(d.name.slice(0, 1))) {
-                        //draw(selectedYear, selectedCounty, selectedDistrict);
-                    }
-                    else if (selectedCounty === "") {
-                        citySelect.property("value", d.name);
-                        draw(); // 更新圖表
-                    }
-                    else if (self.selectedDistrict === "") {
-                        //selectedDistrict = districtSelect.property("value", d.name);
-                        districtSelect.property("value", d.name);
-                        draw(); // 更新圖表
-                    }
+
+            chart.append("g")
+                .attr("transform", `translate(0, ${chartHeight})`)
+                .call(xAxis);
+
+            chart.append("g")
+                .call(yAxis);
+
+            // Add bars
+            chart.selectAll(".band-group")
+                .data(processedData)
+                .join("g")
+                .attr("class", "band-group")
+                .attr("transform", d => `translate(${x0(d.b)}, 0)`)
+                .selectAll(".bar")
+                .data(d => domains.map(domain => ({ domain, value: d[domain] })))
+                .join("rect")
+                .attr("class", "bar")
+                .attr("x", (d, i) => i * (adjustedBarWidth + barPadding))
+                .attr("y", chartHeight)
+                .attr("width", adjustedBarWidth)
+                .attr("height", 0)
+                .attr("fill", d => color(d.domain))
+                .transition()
+                .duration(1000)
+                .ease(d3.easeCubicOut)
+                .attr("y", d => y(d.value))
+                .attr("height", d => chartHeight - y(d.value));
+
+            // Add legend
+            const legend = svg.append("g")
+                .attr("transform", `translate(${chartWidth - 100}, 20)`);
+
+            legend.selectAll(".legend-item")
+                .data(domains)
+                .join("g")
+                .attr("class", "legend-item")
+                .attr("transform", (d, i) => `translate(0, ${i * 20})`)
+                .call(g => {
+                    g.append("rect")
+                        .attr("x", 0)
+                        .attr("y", 0)
+                        .attr("width", 15)
+                        .attr("height", 15)
+                        .attr("fill", color);
+                    g.append("text")
+                        .attr("x", 20)
+                        .attr("y", 12)
+                        .text(d => d);
                 });
 
-            // 繪製受傷柱狀圖
-            g.selectAll(".injury-bar")
-                .data(this.$props.chartData)
-                .enter().append("rect")
-                .attr("class", "injury-bar")
-                .attr("x", d => x(d.name) + x.bandwidth() / 2)  // 受傷柱的 x 坐標偏移
-                .attr("y", d => y(d.injuryCount))
-                .attr("width", x.bandwidth() / 2)  // 設定受傷柱的寬度
-                .attr("height", d => height - y(d.injuryCount))
-                .on("mouseover", function (event, d) {
-                    tooltip.transition().duration(200).style("opacity", .9);
-                    tooltip.html(`名稱: ${d.name}<br>受傷人數: ${d.injuryCount}`)
-                        .style("left", (event.pageX + 5) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function () {
-                    tooltip.transition().duration(500).style("opacity", 0);
-                })
-                .on("click", function (event, d) {
-                    console.log(d);
-                    const selectedYear = yearSelect.property("value");
-                    const selectedCounty = citySelect.property("value");
-                    const selectedDistrict = districtSelect.property("value");
-                    if (!isNaN(d.name.slice(0, 1))) {
-                        //draw(selectedYear, selectedCounty, selectedDistrict);
-                    }
-                    else if (selectedCounty === "") {
-                        citySelect.property("value", d.name);
-                        draw(); // 更新圖表
-                    }
-                    else if (selectedDistrict === "") {
-                        //selectedDistrict = districtSelect.property("value", d.name);
-                        districtSelect.property("value", d.name);
-                        draw(); // 更新圖表
-                    }
-                });
-            // 設定柱狀圖的尺度
-            const xScale = d3.scaleBand()
-                .domain(this.$props.chartData.map(d => d.name))  // X軸是速限的名稱
-                .range([0, width])  // 設定寬度
-                .padding(0.1);
-
-            const yScale = d3.scaleLinear()
-                .domain([0, d3.max(this.$props.chartData, d => Math.max(d.deathCount, d.injuryCount))])  // Y軸最大值是死亡和受傷的最大值
-                .range([height, 0]);  // 設定高度
-
-            g.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(d3.axisBottom(x))
-                .selectAll("text")
-                .attr("transform", "rotate(-45)")
-                .style("text-anchor", "end");
-            g.append("g")
-                .attr("class", "y axis")
-                .call(d3.axisLeft(y));
         },
- 
-        setPlace(county, district) {
+
+        setSelectedCounty(county) {
             this.selectedCounty = county;
-            this.selectedDistrict = district;
-            console.log("[Barchart] place set:", this.selectedCounty, this.selectedDistrict)
         },
-        setCategories(categories) {
-            this.categories = categories;
-            console.log("[Barchart]Categories set:", this.categories);
-            this.draw();
-        }
+
     },
 
 }
@@ -253,16 +236,8 @@ export default {
     opacity: 0;
 }
 
-#backButton {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-#backButton:hover {
-    background-color: #0056b3;
+#mainChart {
+    width: 50vw;
+    height: 75vh;
 }
 </style>
