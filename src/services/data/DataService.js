@@ -197,7 +197,6 @@ class DataBuilder {
 
         });
 
-        console.log("grouped", grouped)
         // Convert the grouped data into an array format
         const result = {};
         Object.entries(grouped).forEach(([target, targetGroups]) => {
@@ -239,9 +238,6 @@ class DataBuilder {
         return this.records;
     }
 }
-
-console.log("rawdData:", rawData)
-// console.log(new DataBuilder().keep(['county', 'district', 'accidentType']).countTimesByIndex(['county', 'district'], { accidentType: ['A2', 'A1'] }).build())
 
 
 export default {

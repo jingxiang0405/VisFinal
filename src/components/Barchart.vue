@@ -40,7 +40,7 @@ export default {
             this.years = years;
         },
         draw() {
-            console.log("[Barchart]data", this.chartData)
+            // console.log("[Barchart]data", this.chartData)
 
             const self = this;
 
@@ -74,7 +74,7 @@ export default {
                 return entry;
             }).sort((a, b) => a.value - b.value);
 
-            console.log('processed:', processedData)
+            // console.log('processed:', processedData)
 
             let title = "";
             const svg = d3.select("#mainChart");

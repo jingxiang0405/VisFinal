@@ -52,7 +52,7 @@ export default {
     },
 
     mounted() {
-        console.log("colorData=", this.colorData)
+        // console.log("colorData=", this.colorData)
         this.geoData = TopoDataService;
         this.container = this.$refs.mapContainer;
         this.width = this.container.offsetWidth;
@@ -212,7 +212,7 @@ export default {
 
         },
         drawGeoPathColor() {
-            console.log("Draw geo")
+            // console.log("Draw geo")
             const self = this;
             this.map.selectAll('.geo-path')
                 .attr('fill', d => {
@@ -229,7 +229,7 @@ export default {
         },
         drawDistrictPathColor() {
             const self = this;
-            console.log("draw district")
+            // console.log("draw district")
             self.currentCountyDistrictD3.attr("fill", (d) => {
                 let county = d.properties.DISTRICT.substring(0, 3);
                 let district = d.properties.DISTRICT.substring(3);
@@ -243,7 +243,7 @@ export default {
             self.drawDefaultGetPathColor();
         },
         drawDefaultGetPathColor() {
-            console.log("Draw default geo")
+            // console.log("Draw default geo")
             this.map.selectAll('.geo-path')
                 .attr('fill', this.$props.defaultLandColor)
         },
