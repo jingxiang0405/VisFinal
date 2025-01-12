@@ -64,7 +64,7 @@ function onSelectNewPlace(placeString) {
     }
     data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
     const colorData = DataColorMapService.map(data);
-    
+    console.log("colorData:", colorData)
     mapRef.value.setColorData(colorData);
 
     chartRef.value.setYears(years);
