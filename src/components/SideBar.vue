@@ -31,7 +31,7 @@ export default {
             filters: {
                 accidentType: { A1: "A1", A2: "A2" },
                 roadType: { 交岔路: "交岔路", 單路部分: "單路部分", 圓環廣場: "圓環廣場" },
-                speedLimit: []
+                roadClass: { 國道: "國道", 專用道路: "專用道路", 市區道路: "市區道路", 快速道: "快速道", 村里道路: "村里道路", 省道: "省道", 縣道: "縣道", 鄉道: "鄉道", 其他: "其他"}
             },
             checkedFilters: [],
             disabled: {}
@@ -151,12 +151,14 @@ input:checked+.slider:before {
 }
 
 .filter {
-    margin-top: 2vh;
+    margin-top: 1vh;
     border-width: 1em;
 }
 
 .categories {
     padding-top: 1vh;
+    display: flexbox;
+    justify-content: space-between;
 }
 
 .category {
