@@ -4,17 +4,6 @@
             <svg id="mainChart"></svg>
         </div>
         <div class="tooltip"></div>
-        <label for="yearSelect">選擇年份:</label>
-        <select v-model="selectedYear" @change="draw()" required>
-            <option value="" selected></option>
-            <option v-for="year in years" :key="year" :value="year">
-                {{ year }}
-            </option>
-        </select>
-        <button id="backButtoncity" @click="this.selectedDistrict = ''; draw();"
-            style="display: none;">返回distict層級</button>
-        <button id="backButtontaiwan" @click="this.selectedDistrict = ''; this.selectedCounty = ''; draw();"
-            style="display: none;">返回county層級</button>
     </div>
 </template>
 
@@ -136,6 +125,7 @@ export default {
             chart.append("g")
                 .call(yAxis);
 
+            const tooltip = d3.select("#tooltip")
             // Add bars
             chart.selectAll(".band-group")
                 .data(processedData)
@@ -155,7 +145,8 @@ export default {
                 .duration(1000)
                 .ease(d3.easeCubicOut)
                 .attr("y", d => y(d.value))
-                .attr("height", d => chartHeight - y(d.value));
+                .attr("height", d => chartHeight - y(d.value))
+
 
             // Add legend
             const legend = svg.append("g")
