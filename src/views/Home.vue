@@ -54,20 +54,17 @@ function onFilterChange(checkedFilters) {
     placeString = [County]
 */
 function onSelectNewPlace(placeString) {
-    console.log("[NewPlace]: ", data)
-
 
     if (placeString.length === 0) {
-        console.log("No selection")
         indexes = ['county'];
     }
 
     else{
-        console.log("County selection")
         indexes = ['county', 'district'];
     }
     data = new DataService.DataBuilder().keep(filters).countTimesByIndex(indexes, checked).build();
     const colorData = DataColorMapService.map(data);
+    
     mapRef.value.setColorData(colorData);
 
     chartRef.value.setYears(years);
